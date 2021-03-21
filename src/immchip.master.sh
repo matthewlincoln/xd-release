@@ -83,7 +83,7 @@ done
 PATH=${PATH}:${bin_direc}
 
 
-# Get liftover utility from UCSC:
+# Get liftOver utility from UCSC:
 if [ ! -f "${bin_direc}/liftOver" ]; then
   wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/liftOver \
     -P ${bin_direc}
@@ -339,7 +339,7 @@ done
 # assembly. The 1000 Genomes Phase III data are mapped to hg19, so we needed to
 # update our data using UCSC's Liftover.
 
-### Each liftover (for each consortium) has several steps.
+# Liftover for each consortium has the following steps:
 # 1. The plink files are converted from bed/bim/fam to ped/map format, as this
 #    makes the next steps easier.
 # 2. The .map files are edited (with sed) to replace the chromsome names 23, 24,
@@ -353,15 +353,8 @@ done
 #     -o output prefix
 #     -c chain file
 #     -b Liftover binary
-# 4. Using the .unlifted file to make a list of SNPs that were abandoned in this
-#    step, and writing it to the log directory. This is done with the following
-#    sed command:
-#
-#    sed -nE '/#Deleted in new/{                                # Finds rows that read "#Deleted in new"
-#    n                                                          # Takes the next line after the one that has been identified
-#                                                               # (and does not hold on to the matched line)
-#    s/.*[[:space:]].*[[:space:]].*[[:space:]](.*)/\1/gp        # Takes the fourth column of this line and prints it out
-#    }' [.unlifted file] > [log file with unlifted SNPs]        # Stores it in the log directory
+# 4. Use the .unlifted file to make a list of SNPs that were abandoned in this
+#    step, and write it to the log directory.
 
 mkdir -p \
       ${temp_direc}/2_liftover_hg19/1_ped_map \
