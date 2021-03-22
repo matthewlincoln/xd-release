@@ -1088,7 +1088,7 @@ cp ${temp_direc}/3_consortium_qc/*/3_pca/*/*.european.samples.txt \
 # across multiple diseases. We apply JLIM directly to the imputed datasets
 # produced above.
 
-sbatch src/immchip.jlim.impute.sh \
+sbatch ${src_direc}/immchip.jlim.impute.sh \
        $temp_direc \
        $data_direc \
        $src_direc \
@@ -1106,7 +1106,7 @@ sbatch src/immchip.jlim.impute.sh \
 # In this section, we use FINEMAP to identify credible intervals for each trait,
 # before and after cross-disease meta-analysis.
 
-sbatch src/immchip.finemap.impute.sh \
+sbatch ${src_direc}/immchip.finemap.impute.sh \
        $temp_direc \
        $data_direc \
        $src_direc \
