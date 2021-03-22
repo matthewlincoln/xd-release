@@ -173,7 +173,7 @@ module load tabix
 
 
 # Obtain 1KG reference SNPs for ImmunoChip regions:
-mkdir -p ${temp_direc}/13_jlim_impute/0_immchip_kg_ref_snps
+mkdir -p ${temp_direc}/8_jlim_impute/0_immchip_kg_ref_snps
 
 for region_num in ${!immchip_chr[@]}; do
   # Get Immunochip region coordinates:
@@ -186,16 +186,16 @@ for region_num in ${!immchip_chr[@]}; do
     -c $KG_EUR_SAMPLES \
     -f '%CHROM\t%POS\t%ID\t%REF\t%ALT\n' | \
     sed 's/|/\t/g' > \
-    ${temp_direc}/13_jlim_impute/0_immchip_kg_ref_snps/region_${region_num}.1kg.snps.txt
+    ${temp_direc}/8_jlim_impute/0_immchip_kg_ref_snps/region_${region_num}.1kg.snps.txt
 done
 
-cat ${temp_direc}/13_jlim_impute/0_immchip_kg_ref_snps/region_*.1kg.snps.txt | \
+cat ${temp_direc}/8_jlim_impute/0_immchip_kg_ref_snps/region_*.1kg.snps.txt | \
   sort -k 1n,1 -k 2n,2 > \
-  ${temp_direc}/13_jlim_impute/0_immchip_kg_ref_snps/reference.1kg.snps.txt
+  ${temp_direc}/8_jlim_impute/0_immchip_kg_ref_snps/reference.1kg.snps.txt
 
 
 # Extract data for all SNPs that passed filtering:
-mkdir -p ${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists
+mkdir -p ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists
 
 Rscript ${src_direc}/jlim.cond.select.imputed.snps.R \
         ${results_direc}/postimputation_qc/imputed.assoc.qc.txt.gz \
@@ -204,11 +204,11 @@ Rscript ${src_direc}/jlim.cond.select.imputed.snps.R \
         $MAF_CONDITIONAL \
         $HWE_THRESHOLD \
         $DIFF_MISSING_THRESHOLD \
-        ${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists/imputed.snps.all.strata.txt
+        ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/imputed.snps.all.strata.txt
 
 # Obtain lists of SNPs to analyze for each region, consortium, and stratum:
-cat ${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists/imputed.snps.all.strata.txt | \
-  awk -v filestem="${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists" \
+cat ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/imputed.snps.all.strata.txt | \
+  awk -v filestem="${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists" \
     'NR!=1 { print $4,$5,$6,$7,$8 > filestem"/region_"$1"."$2"."$3".jlim.snps.txt" }'
 
 
@@ -223,35 +223,35 @@ for region_num in ${!immchip_chr[@]}; do
   region_start=${immchip_start["$region_num"]}
   region_end=${immchip_end["$region_num"]}
 
-  mkdir -p ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}
+  mkdir -p ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}
 
   # Calculate LD between all SNPs at this locus:
   plink --vcf ${data_direc}/1000GP_Phase3/ALL.chr${region_chr}.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz \
         --keep <(echo $KG_EUR_SAMPLES | sed 's/,/\n/g' | awk '{ print $1,$1 }') \
-        --extract range <(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists/region_${region_num}.*.jlim.snps.txt | \
+        --extract range <(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/region_${region_num}.*.jlim.snps.txt | \
                             awk '{ print $2,$3 }' | sort -k 1n,1 -k 2n,2 | uniq | \
                             awk '{ print $1,$2,$2,"SNP"NR }') \
         --r2 \
         --ld-window-r2 0 \
         --ld-window 1000000 \
         --ld-window-kb 1000000 \
-        --out ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2
+        --out ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2
 
   for cons in $cons_list; do
 
-    mkdir -p ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}
+    mkdir -p ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}
 
     # Identify lead SNPs until significance drops below threshold:
     echo "region_num cons stratum assoc_num rsid chromosome position alleleA alleleB beta se p" > \
-      ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt
-    touch ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt
+      ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt
+    touch ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt
     assoc_num=0
     another_round=0
     while true; do
 
       ### Does another round of association need to be done?
       # If the previous round did not produce any new lead SNPs, then stop
-      another_round=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+      another_round=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
                         awk -v assoc=$assoc_num '$3 == assoc-1' | wc -l)
       [ "$assoc_num" -ne 0 ] && [ "$another_round" -eq 0 ] && break
 
@@ -260,10 +260,10 @@ for region_num in ${!immchip_chr[@]}; do
 
       for stratum in ${strat_list[$cons]}; do
         # echo $cons $stratum $region_num $region_chr $region_start $region_end
-        if [ ! -f ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample ]; then
+        if [ ! -f ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample ]; then
 
           # Compile list of SNPs to include for this region, consortium and stratum:
-          cat ${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists/${cons}.${stratum}.snps.to.analyze.txt | \
+          cat ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/${cons}.${stratum}.snps.to.analyze.txt | \
             awk -v chr=$region_chr -v start=$region_start -v end=$region_end \
               '$1==chr && $2>=start && $2<=end { print  }'
 
@@ -271,15 +271,15 @@ for region_num in ${!immchip_chr[@]}; do
           qctool_v2.1-dev -g ${project_direc}/imputed_dataset/${cons}/${stratum}/${cons}.${stratum}.chr_${region_chr}.imputed.bgen \
                           -s ${project_direc}/imputed_dataset/${cons}/${stratum}/${cons}.${stratum}.chr_${region_chr}.imputed.sample \
                           -excl-samples ${log_direc}/assoc_test/${cons}/${cons}.relatives.to.remove.txt \
-                          -incl-rsids <(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/snp_lists/region_${region_num}.${cons}.${stratum}.jlim.snps.txt | cut -d ' ' -f 1)\
+                          -incl-rsids <(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/region_${region_num}.${cons}.${stratum}.jlim.snps.txt | cut -d ' ' -f 1)\
                           -ofiletype bgen_v1.1 \
                           -bgen-permitted-input-rounding-error 0.001 \
-                          -og ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
-                          -os ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample
+                          -og ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                          -os ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample
 
           # Add principal components to sample file:
           join -1 3 -2 2 -a 1 -e 'NA' -o 1.1 1.2 1.3 1.4 1.5 1.6 1.7 1.8 2.1 2.2 2.3 2.4 \
-            <(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample | \
+            <(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample | \
                 awk 'NR > 2 { print NR-2,$0 }' | \
                 sort -k 3,3) \
             <(cat ${results_direc}/assoc_test/${cons}/${cons}.${stratum}.ld.pruned.pca.pcs.txt | \
@@ -288,11 +288,11 @@ for region_num in ${!immchip_chr[@]}; do
             awk 'BEGIN{ print "ID_1","ID_2","missing","father","mother","sex","pheno","pc1","pc2";
                         print "0","0","0","D","D","D","B","C","C" }
                  { print $2,$3,$4,$5,$6,$7,$8,$11,$12 }' > \
-            ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample
+            ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample
         fi
 
         # Get list of SNPs to condition on:
-        condition_snps=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+        condition_snps=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
           awk -v strat=$stratum '$4==strat { print $5 }' | tr '\n' ' ')
         ### Include lead SNPs identified in this stratum in all previous rounds of meta analysis
 
@@ -300,31 +300,31 @@ for region_num in ${!immchip_chr[@]}; do
         safestrat=$(echo $stratum | sed 's/-/_/g')
 
         # Run association test with conditioning:
-        snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
-                             ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+        snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                             ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
                        -frequentist 1 \
                        -method expected \
                        -pheno pheno \
                        -cov_names pc1 pc2 \
                        -condition_on $condition_snps \
-                       -o ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.assoc_${assoc_num}.snptest
+                       -o ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.assoc_${assoc_num}.snptest
 
-        cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.assoc_${assoc_num}.snptest | \
+        cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.assoc_${assoc_num}.snptest | \
           awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$assoc_num \
           '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42}' >> \
-           ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt
+           ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt
       done # stratum
 
       # Perform meta analysis with metafor:
       Rscript ${src_direc}/jlim.cond.metafor.R \
               $region_num \
               $cons \
-              ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt \
-              ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2.ld \
+              ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt \
+              ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2.ld \
               $COND_R2_THRESHOLD \
               $MAX_HET_I2 \
               $COND_P_THRESHOLD \
-              ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt
+              ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt
 
       # Increment association counter:
       assoc_num=$((assoc_num + 1))
@@ -348,16 +348,16 @@ for region_num in ${!immchip_chr[@]}; do
   # Skip region 75 (MHC):
   [ "$region_num" -eq 75 ] && continue
 
-  cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2.ld | \
+  cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2.ld | \
     awk -v region=$region_num 'NR!=1 { print region,$1,$2,$3,$4,$5,$6,$7 }' >> \
     ${results_direc}/jlim_impute/jlim.cond.impute.r2.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 
   for cons in $cons_list; do
-    cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt | \
+    cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.assoc.results.txt | \
       awk 'NR!=1' >> \
       ${results_direc}/jlim_impute/jlim.cond.impute.assoc.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 
-    cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt >> \
+    cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt >> \
       ${results_direc}/jlim_impute/jlim.cond.impute.lead.snps.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
   done
 done
@@ -382,16 +382,16 @@ for region_num in ${!immchip_chr[@]}; do
   # Skip region 75 (MHC):
   [ "$region_num" -eq 75 ] && continue
 
-  mkdir -p ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}
+  mkdir -p ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}
 
   echo "region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p" > \
-    ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt
+    ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt
 
   for cons in $cons_list; do
-    mkdir -p ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/${cons}
+    mkdir -p ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/${cons}
 
     # Calculate the number of associations identified at this locus:
-    num_cond_assoc=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+    num_cond_assoc=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
       awk '{ print $3 }' | sort | uniq | wc -l)
 
     # Run unconditional analysis:
@@ -401,18 +401,18 @@ for region_num in ${!immchip_chr[@]}; do
       safestrat=$(echo $stratum | sed 's/-/_/g')
 
       # Run association test without conditioning:
-      snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
-                           ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+      snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                           ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
                      -frequentist 1 \
                      -method expected \
                      -pheno pheno \
                      -cov_names pc1 pc2 \
-                     -o ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest
+                     -o ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest
 
-      cat ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest | \
+      cat ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest | \
         awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$indep_num \
         '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42}' >> \
-        ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt
+        ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt
     done # stratum
 
     # Run conditionally independent associations:
@@ -422,7 +422,7 @@ for region_num in ${!immchip_chr[@]}; do
       # the current SNP. We start numbering of indepenent associations at 1
       # (rather than 0), so that we can plot the unconditional association as
       # association number 0.
-      cond_snp_nums=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+      cond_snp_nums=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
                       awk '{ print $3 }' | sort | uniq)
     else
       # No association was identified with P < COND_P_THRESHOLD: use a dummy
@@ -435,7 +435,7 @@ for region_num in ${!immchip_chr[@]}; do
     for assoc_num in $cond_snp_nums; do
       # For each stratum, condition on all lead SNPs identified apart from the current lead:
       for stratum in ${strat_list[$cons]}; do
-        condition_snps=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+        condition_snps=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
                            awk -v strat=$stratum -v assoc=$assoc_num \
                              'BEGIN{ ORS = " " }
                               $3!=assoc && $4==strat { print $5 }')
@@ -444,19 +444,19 @@ for region_num in ${!immchip_chr[@]}; do
         safestrat=$(echo $stratum | sed 's/-/_/g')
 
         # Run association test with conditioning:
-        snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
-                             ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+        snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                             ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
                        -frequentist 1 \
                        -method expected \
                        -pheno pheno \
                        -cov_names pc1 pc2 \
                        -condition_on $condition_snps \
-                       -o ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest
+                       -o ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest
 
-        cat ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest | \
+        cat ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.imputed.indep_${indep_num}.snptest | \
           awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$indep_num \
           '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42}' >> \
-          ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt
+          ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt
 
       done # stratum
 
@@ -471,7 +471,7 @@ done # region_num
 echo "region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p" > \
   ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 for region_num in ${!immchip_chr[@]}; do
-  cat ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt | \
+  cat ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt | \
     awk 'NR!=1' >> \
     ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 done
@@ -497,206 +497,206 @@ gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD
 
 # Merge strata for each disease-level dataset:
 for cons in $cons_list; do
-  mkdir -p ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/${cons}
+  mkdir -p ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/${cons}
 
-  > ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.mergelist.txt
+  > ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.mergelist.txt
   # Create merge list for this consortium:
   for stratum in ${strat_list[$cons]}; do
     echo "${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels" >> \
-      ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.mergelist.txt
+      ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.mergelist.txt
   done # stratum
 
-  plink --merge-list ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.mergelist.txt \
+  plink --merge-list ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.mergelist.txt \
         --allow-no-sex \
         --make-bed \
-        --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.merged
+        --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/${cons}/${cons}.merged
 done # cons
 
 # SLE strata were genotyped separately, so there are strand inconsistencies:
 plink --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/sle/sle_o/sle.sle_o.no.rels \
-      --flip ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged-merge.missnp \
+      --flip ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.sle_o.flipped
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.sle_o.flipped
 
 plink --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/sle/sle_g.EA/sle.sle_g.EA.no.rels \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.sle_o.flipped \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.sle_o.flipped \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged
 
 
 ### Merge CeD and IBD:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced/ced.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced/ced.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged
 
 # Strand flips:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged \
-      --flip ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged \
+      --flip ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged.flipped
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged.flipped
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced/ced.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged.flipped \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced/ced.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ibd/ibd.merged.flipped \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged
 
 
 ### Add MS:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ms/ms.merged \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ms/ms.merged \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged
 
 # Strand flips:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ms/ms.merged \
-      --flip ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ms/ms.merged \
+      --flip ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ms/ms.merged.flipped
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ms/ms.merged.flipped
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ms/ms.merged.flipped \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ms/ms.merged.flipped \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged
 
-rm ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.merge*
+rm ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.merge*
 
 
 ### Add RA:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged
 
 # Strand flips:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged \
-      --flip ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged \
+      --flip ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged
 
 # Remaining triallelic SNPs:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped \
-      --exclude ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped \
+      --exclude ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped.excluded
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped.excluded
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped.excluded \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ra/ra.merged.flipped.excluded \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged
 
-rm ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merge*
+rm ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.merge*
 
 ### Add SLE:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged
 
 # Strand flips:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged \
-      --flip ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged \
+      --flip ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged
 
 # Remaining triallelic SNPs:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped \
-      --exclude ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped \
+      --exclude ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped.excluded
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped.excluded
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped.excluded \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/sle/sle.merged.flipped.excluded \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged
 
-rm ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merge*
+rm ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.merge*
 
 
 ### Add T1D:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged
 
 # Strand flips:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged \
-      --flip ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged \
+      --flip ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged
 
 # Remaining triallelic SNP:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped \
-      --exclude ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged-merge.missnp \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped \
+      --exclude ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged-merge.missnp \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped.excluded
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped.excluded
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged \
-      --bmerge ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped.excluded \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merged \
+      --bmerge ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/t1d/t1d.merged.flipped.excluded \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged
 
-rm ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merge*
+rm ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merge*
 
 
 # Submit slurm jobs to calculate IBD:
-mkdir -p ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/scripts \
-         ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/outputs
+mkdir -p ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts \
+         ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/outputs
 
 jobid=""
 joblist=""
 for i in {1..100}; do
   printf '#!'"/bin/bash
 #SBATCH -J dups.ibd.${i}
-#SBATCH -o ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.out
-#SBATCH -e ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.err
+#SBATCH -o ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.out
+#SBATCH -e ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.err
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \\
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \\
       --genome full \\
       --min 0.185 \\
       --parallel ${i} 100 \\
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/outputs/all.cons.merged.ibd" > \
-    ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.sh
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/outputs/all.cons.merged.ibd" > \
+    ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.sh
 
-  sbatch ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.sh
+  sbatch ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.sh
 done
 
 # We must wait for IBD calculations to finish before continuing:
@@ -706,11 +706,11 @@ exit
 # Combine IBD results into a single file:
 > ${results_direc}/jlim_impute/all.cons.merged.genome
 for i in {1..100}; do
-  cat ${temp_direc}/13_jlim_impute/3_identify_dups/2_ibd/outputs/all.cons.merged.ibd.genome.${i} >> \
+  cat ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/outputs/all.cons.merged.ibd.genome.${i} >> \
     ${results_direc}/jlim_impute/all.cons.merged.genome
 done
 
-mkdir -p ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness
+mkdir -p ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness
 
 # Calculate missingness from original input datasets:
 for cons in $cons_list; do
@@ -719,45 +719,45 @@ for cons in $cons_list; do
           --missing \
           --allow-no-sex \
           --make-bed \
-          --out ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.${stratum}.missingness
+          --out ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.${stratum}.missingness
   done # stratum
 
   # Produce a single individual missingness file for each consortium:
-  cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.*.missingness.imiss | \
+  cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.*.missingness.imiss | \
     awk '!a[$0]++ { print $1,$2,$3,$4,$5,$6 }' > \
-    ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.imiss
+    ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.imiss
 
   # Produce a single pedigree file for each consortium:
-  cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.*.missingness.fam | \
+  cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.*.missingness.fam | \
     awk '!a[$0]++ { print $1,$2,$3,$4,$5,$6 }' > \
-    ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.fam
+    ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.fam
 
-  rm ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.*.missingness.*
+  rm ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.*.missingness.*
 done # cons
 
 
 # Calculate the total number of unique individuals that go into JLIM analysis:
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \
       --missing \
       --allow-no-sex \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.missingness
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.missingness
 
 
 Rscript ${src_direc}/identify.dups.and.rels.to.remove.R \
         ${results_direc}/jlim_impute/all.cons.merged.genome \
-        ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.missingness.imiss \
-        ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.fam \
+        ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.missingness.imiss \
+        ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.fam \
         TRUE \
-        ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge \
+        ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge \
         all.cons.merged
 
-plink --bfile ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \
-      --remove ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/all.cons.merged.duplicates.to.remove.txt \
+plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \
+      --remove ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/all.cons.merged.duplicates.to.remove.txt \
       --allow-no-sex \
       --make-bed \
-      --out ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.unique
+      --out ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.unique
 
-wc -l ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.unique.fam
+wc -l ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged.unique.fam
 
 
 ################################################################################
@@ -778,7 +778,7 @@ wc -l ${temp_direc}/13_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d
 
 # Identify trait pairs, remove trans-consortium duplicates and repeat
 # association testing:
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs
 
 for region_num in ${!immchip_chr[@]}; do
 
@@ -787,14 +787,14 @@ for region_num in ${!immchip_chr[@]}; do
 
   Rscript ${src_direc}/jlim.impute.pairs.R \
           $region_num \
-          ${temp_direc}/13_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt \
-          ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2.ld \
+          ${temp_direc}/8_jlim_impute/2_indep_assoc/region_${region_num}/region_${region_num}.imputed.indep.assoc.results.txt \
+          ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/region_${region_num}.1kg.r2.ld \
           $MAX_HET_I2 \
           $P_PRIMARY_THRESHOLD \
           $P_SECONDARY_THRESHOLD \
           $LEAD_R2_THRESHOLD \
           $MIN_SNPS_INTERSECTION \
-          ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs
+          ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs
 done # region_num
 
 
@@ -805,10 +805,10 @@ done # region_num
 for region_num in ${!immchip_chr[@]}; do
 
   # Skip regions that have no trait pairs to analyze:
-  [ ! -s ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -s ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
   # Make scripts directory:
-  mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts
+  mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts
 
   region_chr=${immchip_chr["$region_num"]}
   region_start=${immchip_start["$region_num"]}
@@ -822,66 +822,66 @@ for region_num in ${!immchip_chr[@]}; do
     echo -e '#!'"/bin/bash
 #SBATCH -J region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc
 #SBATCH -C haswell
-#SBATCH -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.out
-#SBATCH -e ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.err
+#SBATCH -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.out
+#SBATCH -e ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.err
 
 module load R/3.5.0-foss-2016b-avx2
 module load VCFtools
 module load tabix
 
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets
 
 # Identify duplicates to remove from either trait:
-cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons1}.imiss \\
-    ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons2}.imiss | \\
+cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons1}.imiss \\
+    ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons2}.imiss | \\
   awk '!a[\$0]++ { print \$1,\$2,\$3,\$4,\$5,\$6 }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.imiss
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.imiss
 
-cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons1}.fam \\
-    ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons2}.fam | \\
+cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons1}.fam \\
+    ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons2}.fam | \\
   awk '!a[\$0]++ { print }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam
 
 cat ${results_direc}/jlim_impute/all.cons.merged.genome | \\
   awk '\$10>=0.9' | \\
   sort -k 1,1 | \\
   join -j 1 - \\
-            <(sort -k 1,1 ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam) | \\
+            <(sort -k 1,1 ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam) | \\
   sort -k 3,3 | \\
   join -1 3 -2 1 - \\
-                 <(sort -k 1,1 ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam) | \\
+                 <(sort -k 1,1 ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam) | \\
   awk 'BEGIN { OFS=\"\\\t\";
                print \"FID1\",\"IID1\",\"FID2\",\"IID2\",\"RT\",\"EZ\",\"Z0\",\"Z1\",\"Z2\",\"PI_HAT\",\"PHE\",\"DST\",\"PPC\",\"RATIO\",\"IBS0\",\"IBS1\",\"IBS2\",\"HOMHOM\",\"HETHET\" }
        { print \$2,\$3,\$1,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\$11,\$12,\$13,\$14,\$15,\$16,\$17,\$18,\$19 }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.duplicates.genome
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.duplicates.genome
 ### Note that we filter by PI_HAT >= 0.9; we are only interested to remove
 ### true duplicates, not low-level (e.g. ~ 0.185) relatives that are likely
 ### to be spurious.
 
 Rscript ${src_direc}/identify.dups.and.rels.to.remove.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.duplicates.genome \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.imiss \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.duplicates.genome \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.imiss \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.fam \\
         TRUE \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets \\
         ${cons1}_${indep_num1}.${cons2}_${indep_num2}
 
 # Remove duplicates from each stratum of first trait and repeat association testing:
 echo \"region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p\" > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
 for stratum in ${strat_list[$cons1]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/${cons1}.\${stratum}.region_${region_num}.imputed.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/${cons1}.\${stratum}.region_${region_num}.imputed.2pc.sample \\
-                  -excl-samples ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.relatives.to.remove.txt \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/${cons1}.\${stratum}.region_${region_num}.imputed.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/${cons1}.\${stratum}.region_${region_num}.imputed.2pc.sample \\
+                  -excl-samples ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.relatives.to.remove.txt \\
                   -ofiletype bgen_v1.1 \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                  -os ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                  -os ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample
 
   if [ "$indep_num1" -eq 0 ]; then
     condition_snps=\"\"
   else
-    condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/region_${region_num}.${cons1}.lead.snps.txt | \\
+    condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/region_${region_num}.${cons1}.lead.snps.txt | \\
                         awk -v strat=\$stratum -v indep=$indep_num1 \\
                           'BEGIN{ ORS = \" \" }
                            \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -891,37 +891,37 @@ for stratum in ${strat_list[$cons1]}; do
   safestrat=\$(echo \$stratum | sed 's/-/_/g')
 
   # Run association test:
-  snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                       ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                       ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
                  -frequentist 1 \\
                  -method expected \\
                  -pheno pheno \\
                  -cov_names pc1 pc2 \\
                  -condition_on \$condition_snps \\
-                 -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.\${safestrat}.snptest
+                 -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.\${safestrat}.snptest
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.\${safestrat}.snptest | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.\${safestrat}.snptest | \\
     awk -v region=$region_num -v cons=$cons1 -v strat=\$stratum -v assoc=$indep_num1 \\
     '!/^#/ && \$2 != \"rsid\" { print region,cons,strat,assoc,\$2,\$3,\$4,\$5,\$6,\$44,\$45,\$42}' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
 
-  # rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.\${safestrat}.snptest
+  # rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.\${safestrat}.snptest
 done # stratum
 
 # Remove duplicates from each stratum of second trait and repeat association testing:
 for stratum in ${strat_list[$cons2]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/${cons2}.\${stratum}.region_${region_num}.imputed.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/${cons2}.\${stratum}.region_${region_num}.imputed.2pc.sample \\
-                  -excl-samples ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.relatives.to.remove.txt \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/${cons2}.\${stratum}.region_${region_num}.imputed.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/${cons2}.\${stratum}.region_${region_num}.imputed.2pc.sample \\
+                  -excl-samples ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}_${indep_num1}.${cons2}_${indep_num2}.relatives.to.remove.txt \\
                   -ofiletype bgen_v1.1 \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                  -os ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                  -os ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample
 
   if [ "$indep_num2" -eq 0 ]; then
     condition_snps=\"\"
   else
-    condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/region_${region_num}.${cons2}.lead.snps.txt | \\
+    condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/region_${region_num}.${cons2}.lead.snps.txt | \\
                         awk -v strat=\$stratum -v indep=$indep_num2 \\
                           'BEGIN{ ORS = \" \" }
                            \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -931,52 +931,52 @@ for stratum in ${strat_list[$cons2]}; do
   safestrat=\$(echo \$stratum | sed 's/-/_/g')
 
   # Run association test:
-  snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                       ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                       ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
                  -frequentist 1 \\
                  -method expected \\
                  -pheno pheno \\
                  -cov_names pc1 pc2 \\
                  -condition_on \$condition_snps \\
-                 -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.\${safestrat}.snptest
+                 -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.\${safestrat}.snptest
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.\${safestrat}.snptest | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.\${safestrat}.snptest | \\
     awk -v region=$region_num -v cons=$cons2 -v strat=\$stratum -v assoc=$indep_num2 \\
     '!/^#/ && \$2 != \"rsid\" { print region,cons,strat,assoc,\$2,\$3,\$4,\$5,\$6,\$44,\$45,\$42}' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
 
-  # rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.\${safestrat}.snptest
+  # rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.\${safestrat}.snptest
 done # stratum
 
 
 # Run meta analysis:
 Rscript ${src_direc}/jlim.indep.metafor.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt \\
         $MAX_HET_I2 \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}
 
 # Clean up raw association results:
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.*.snptest \\
-   ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.*.snptest \\
+   ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.results.txt
 
 
 # Produce primary trait summary data:
-mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.metafor.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt
-mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.metafor.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt
+mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons1}_${indep_num1}.metafor.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt
+mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/region_${region_num}.${cons2}_${indep_num2}.metafor.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt
 
 
 # Put secondary trait data in expected directory:
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}
 
-cp ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear
-cp ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear
+cp ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear
+cp ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear
 
 
 # Reference LD data:
@@ -985,64 +985,64 @@ vcf-query ${data_direc}/1000GP_Phase3/ALL.chr${region_chr}.phase3_shapeit2_mvnca
           -c $KG_EUR_SAMPLES \\
           -f '%CHROM\\\t%POS\\\t%ID\\\t%REF\\\t%ALT\\\t%QUAL\\\t%FILTER[\\\t%GT]\\\n' | \\
   sed 's/|/\\\t/g' > \\
-${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/ref.ld.txt
+${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/ref.ld.txt
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/ref.ld.txt | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/ref.ld.txt | \\
   awk '{ print \$1\":\"\$2\":\"\$4\":\"\$5,\$0 }' | \\
   sort -k 1,1 | \\
-  join -j 1 - <(sort -k 1,1 ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt) | \\
+  join -j 1 - <(sort -k 1,1 ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt) | \\
   cut -d ' ' -f 2- | \\
   sort -k 2n,2 | \\
   tr ' ' '\\\t' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}.txt
 ### NOTE: This code assumes there are no strand flips
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}.txt
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}.txt
 
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/ref.ld.txt
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/ref.ld.txt
 
 
 # Produce dosage file for first trait:
 mergelist=\"\"
-> ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.mergelist.txt
+> ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.mergelist.txt
 for stratum in ${strat_list[$cons1]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -incl-rsids <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt | \\
+                  -incl-rsids <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt | \\
                                   awk 'NR!=1 { print \$2 }') \\
-                  -map-id-data ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen
-  mergelist=\"\$mergelist -g ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen \\
--s ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample\"
+                  -map-id-data ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt \\
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen
+  mergelist=\"\$mergelist -g ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen \\
+-s ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample\"
 
-  plink --bgen ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-        --sample ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
-        --extract <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt | \\
+  plink --bgen ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+        --sample ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+        --extract <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt | \\
                       awk 'NR!=1 { print \$8 }') \\
-        --update-name ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt 8 2 1 \\
+        --update-name ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt 8 2 1 \\
         --mind 0 \\
         --allow-no-sex \\
         --make-bed \\
-        --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed
+        --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed
 
-  echo \"${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed\" >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.mergelist.txt
+  echo \"${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.renamed\" >> \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.mergelist.txt
 done # stratum
 
 qctool_v2.1-dev \$mergelist \\
                 -bgen-permitted-input-rounding-error 0.001 \\
-                -og ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.gen \\
-                -os ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.sample
+                -og ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.gen \\
+                -os ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.sample
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.sample | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.sample | \\
   awk 'NR==3 { samples=\$1 }
        NR>3 { samples=samples\"\\\t\"\$1 }
        END { OFS=\"\\\t\";
              print \"clone\",\"Start\",\"A1\",\"A2\",samples }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.dosage
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.gen | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.merged.gen | \\
   awk 'BEGIN{ OFS=\"\\\t\"}
        { split(\$0, a);
          dosage=\"\"
@@ -1051,62 +1051,62 @@ cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_nu
          }
          print \$3,\$4,\$5,\$6\"\"dosage
        }' >> \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.dosage
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.dosage
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.dosage
 
-plink --merge-list ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.mergelist.txt \\
+plink --merge-list ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.mergelist.txt \\
       --mind 0 \\
       --allow-no-sex \\
       --recode \\
-      --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}
+      --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}
 
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.{bed,bim,fam,map,nosex,log}
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.{bed,bim,fam,map,nosex,log}
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.ped
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.ped
 
 
 # Produce dosage file for second trait:
 mergelist=\"\"
-> ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.mergelist.txt
+> ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.mergelist.txt
 for stratum in ${strat_list[$cons2]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -incl-rsids <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt | \\
+                  -incl-rsids <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt | \\
                                   awk 'NR!=1 { print \$2 }') \\
-                  -map-id-data ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen
-  mergelist=\"\$mergelist -g ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen \\
--s ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample\"
+                  -map-id-data ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt \\
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen
+  mergelist=\"\$mergelist -g ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed.bgen \\
+-s ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample\"
 
-  plink --bgen ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-        --sample ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
-        --extract <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt | \\
+  plink --bgen ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+        --sample ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+        --extract <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt | \\
                       awk 'NR!=1 { print \$8 }') \\
-        --update-name ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt 8 2 1 \\
+        --update-name ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt 8 2 1 \\
         --mind 0 \\
         --allow-no-sex \\
         --make-bed \\
-        --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed
+        --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed
 
-  echo \"${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed\" >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.mergelist.txt
+  echo \"${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.renamed\" >> \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.mergelist.txt
 done # stratum
 
 qctool_v2.1-dev \$mergelist \\
                 -bgen-permitted-input-rounding-error 0.001 \\
-                -og ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.gen \\
-                -os ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.sample
+                -og ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.gen \\
+                -os ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.sample
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.sample | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.sample | \\
   awk 'NR==3 { samples=\$1 }
        NR>3 { samples=samples\"\\\t\"\$1 }
        END { OFS=\"\\\t\";
              print \"clone\",\"Start\",\"A1\",\"A2\",samples }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.dosage
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.gen | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.merged.gen | \\
   awk 'BEGIN{ OFS=\"\\\t\"}
        { split(\$0, a);
          dosage=\"\"
@@ -1115,66 +1115,66 @@ cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_nu
          }
          print \$3,\$4,\$5,\$6\"\"dosage
        }' >> \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.dosage
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.dosage
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.dosage
 
-plink --merge-list ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.mergelist.txt \\
+plink --merge-list ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.mergelist.txt \\
       --mind 0 \\
       --allow-no-sex \\
       --recode \\
-      --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}
+      --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}
 
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.{bed,bim,fam,map,nosex,log}
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.{bed,bim,fam,map,nosex,log}
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.ped
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.ped
 
 
 # Compile all primary and secondary trait .sample files for permutations:
 echo \"cons stratum ID_1 ID_2 missing father mother sex pheno pc1 pc2\" > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.sample.data.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.sample.data.txt
 for stratum in ${strat_list[$cons1]}; do
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample | \\
     awk -v cons=$cons1 -v strat=\$stratum \\
       'NR>2 { print cons,strat,\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9 }' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.sample.data.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.sample.data.txt
 done # stratum
 
 echo \"cons stratum ID_1 ID_2 missing father mother sex pheno pc1 pc2\" > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.sample.data.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.sample.data.txt
 for stratum in ${strat_list[$cons2]}; do
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample | \\
     awk -v cons=$cons2 -v strat=\$stratum \\
       'NR>2 { print cons,strat,\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9 }' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.sample.data.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.sample.data.txt
 done # stratum" > \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.sh
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.sh
 
     # Perform association analyses:
-    assoc_jobid=$(sbatch --parsable ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.sh)
+    assoc_jobid=$(sbatch --parsable ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.sh)
 
     perm_job_list=""
     # Permute both primary and secondary traits:
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
       # Skip batches that have already been successfully analyzed:
-      [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt ] && \
-      [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt ] && \
-      [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt ] && \
-      [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt ] && \
+      [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt ] && \
+      [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt ] && \
+      [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt ] && \
+      [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt ] && \
       continue
 
       echo -e '#!'"/bin/bash
 #SBATCH -J region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}
 #SBATCH -C haswell
 #SBATCH --time=7-00:00:00
-#SBATCH -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.out
-#SBATCH -e ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.err
+#SBATCH -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.out
+#SBATCH -e ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.err
 
 module load R/3.5.0-foss-2016b-avx2
 
 # Permute phenotypes for the primary and secondary traits:
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_${batch_num} \\
-         ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_${batch_num} \\
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_${batch_num} \\
+         ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_${batch_num} \\
          /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets
 
 # Produce header for each primary trait permutation .sample file:
@@ -1187,7 +1187,7 @@ done # stratum
 
 # Permute phenotypes and append to headers:
 Rscript ${src_direc}/jlim.permute.sample.pheno.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.sample.data.txt \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.sample.data.txt \\
         $NUM_PERM \\
         /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets/${cons1}
 
@@ -1202,29 +1202,29 @@ done # stratum
 
 # Permute phenotypes and append to headers:
 Rscript ${src_direc}/jlim.permute.sample.pheno.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.sample.data.txt \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.sample.data.txt \\
         $NUM_PERM \\
         /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets/${cons2}
 
 
 # Copy .bgen files to RAM partition:
-# cp ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.*.region_${region_num}.imputed.nodup.bgen \\
-#    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.*.region_${region_num}.imputed.nodup.bgen \\
+# cp ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.*.region_${region_num}.imputed.nodup.bgen \\
+#    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.*.region_${region_num}.imputed.nodup.bgen \\
 #    /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets
 
 
 # Filter .bgen files for SNPs present in secondary trait association studies:
 for stratum in ${strat_list[$cons1]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
                   -incl-rsids <(join -j 1 -o 2.2 \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt | \\
                                       awk '{ print \$2\":\"\$3 }' | \\
                                       sort) \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons1}_${indep_num1}.\${stratum}.rename.snps.txt | \\
                                       awk '{ print \$3\":\"\$4,\$2 }' | \\
                                       sort -k 1,1)
-                                cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/region_${region_num}.${cons1}.lead.snps.txt | \\
+                                cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/region_${region_num}.${cons1}.lead.snps.txt | \\
                                   awk -v strat=\$stratum -v indep=$indep_num1 \\
                                     '\$3!=(indep-1) && \$4==strat { print \$5 }') \\
                   -ofiletype bgen_v1.1 \\
@@ -1232,16 +1232,16 @@ for stratum in ${strat_list[$cons1]}; do
                   -og /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.bgen
 done # stratum
 for stratum in ${strat_list[$cons2]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
                   -incl-rsids <(join -j 1 -o 2.2 \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt | \\
                                       awk '{ print \$2\":\"\$3 }' | \\
                                       sort) \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/region_${region_num}.${cons2}_${indep_num2}.\${stratum}.rename.snps.txt | \\
                                       awk '{ print \$3\":\"\$4,\$2 }' | \\
                                       sort -k 1,1)
-                                cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/region_${region_num}.${cons2}.lead.snps.txt | \\
+                                cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/region_${region_num}.${cons2}.lead.snps.txt | \\
                                   awk -v strat=\$stratum -v indep=$indep_num2 \\
                                     '\$3!=(indep-1) && \$4==strat { print \$5 }') \\
                   -ofiletype bgen_v1.1 \\
@@ -1253,11 +1253,11 @@ done # stratum
 
 # Copy unpermuted dataset as permutation 0:
 for stratum in ${strat_list[$cons1]}; do
-  cp ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  cp ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons1}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
     /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets/${cons1}.\${stratum}.perm_0.sample
 done # stratum
 for stratum in ${strat_list[$cons2]}; do
-  cp ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
+  cp ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/datasets/${cons2}.\${stratum}.region_${region_num}.imputed.nodup.sample \\
     /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/datasets/${cons2}.\${stratum}.perm_0.sample
 done # stratum
 
@@ -1274,7 +1274,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
     if [ "$indep_num1" -eq 0 ]; then
       condition_snps=\"\"
     else
-      condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/region_${region_num}.${cons1}.lead.snps.txt | \\
+      condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons1}/region_${region_num}.${cons1}.lead.snps.txt | \\
                           awk -v strat=\$stratum -v indep=$indep_num1 \\
                            'BEGIN{ ORS = \" \" }
                             \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -1314,7 +1314,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
 
   # Transfer meta analysis results to scratch partition:
   mv /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/region_${region_num}.${cons1}_${indep_num1}.metafor.txt \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_${batch_num}/${cons1}.batch_${batch_num}.perm_\${perm_num}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_${batch_num}/${cons1}.batch_${batch_num}.perm_\${perm_num}.txt
 
   # Clean up association results and permuted .sample file:
   rm /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/region_${region_num}.${cons1}_${indep_num1}.assoc.results.batch_${batch_num}.perm_\${perm_num}.txt \\
@@ -1334,7 +1334,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
     if [ "$indep_num2" -eq 0 ]; then
       condition_snps=\"\"
     else
-      condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/region_${region_num}.${cons2}.lead.snps.txt | \\
+      condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons2}/region_${region_num}.${cons2}.lead.snps.txt | \\
                           awk -v strat=\$stratum -v indep=$indep_num2 \\
                            'BEGIN{ ORS = \" \" }
                             \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -1374,7 +1374,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
 
   # Transfer meta analysis results to scratch partition:
   mv /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/region_${region_num}.${cons2}_${indep_num2}.metafor.txt \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_${batch_num}/${cons2}.batch_${batch_num}.perm_\${perm_num}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_${batch_num}/${cons2}.batch_${batch_num}.perm_\${perm_num}.txt
 
   # Clean up association results and permuted .sample file:
   rm /dev/shm/${USER}/perm/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/batch_${batch_num}/region_${region_num}.${cons2}_${indep_num2}.assoc.results.batch_${batch_num}.perm_\${perm_num}.txt \\
@@ -1398,10 +1398,10 @@ fi
 if [ ! \"\$(ls -A /dev/shm/${USER})\" ]; then
   rm -rf /dev/shm/${USER}
 fi" > \
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.sh
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.sh
 
       # Launch this job conditional on the association tests:
-      perm_jobid=$(sbatch --parsable --dependency=afterok:$assoc_jobid ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.sh)
+      perm_jobid=$(sbatch --parsable --dependency=afterok:$assoc_jobid ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.batch_${batch_num}.sh)
 
       perm_job_list="${perm_job_list}:${perm_jobid}"
     done # batch_num
@@ -1413,174 +1413,174 @@ fi" > \
 #SBATCH -J region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim
 #SBATCH -C haswell
 #SBATCH --mem=12G
-#SBATCH -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.out
-#SBATCH -e ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.err
+#SBATCH -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.out
+#SBATCH -e ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.err
 
 module load R/3.5.0-foss-2016b-avx2
 
 
 # Generate IndexSNP files:
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt | \\
   sort -k 7g,7 | \\
   awk -v jlim_start=$region_start -v jlim_end=$region_end \\
     'BEGIN { OFS=\"\\\t\";
              print \"CHR\",\"SNP\",\"BP\",\"STARTBP\",\"ENDBP\" }
      NR==2 { print \$2,\$1,\$3,jlim_start,jlim_end }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt | \\
   sort -k 7g,7 | \\
   awk -v jlim_start=$region_start -v jlim_end=$region_end \\
     'BEGIN { OFS=\"\\\t\";
              print \"CHR\",\"SNP\",\"BP\",\"STARTBP\",\"ENDBP\" }
      NR==2 { print \$2,\$1,\$3,jlim_start,jlim_end }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt
 
 
 for batch_num in \$(seq 1 $NUM_PERM_BATCHES); do
   # Compile permutations into JLIM perm matrix format:
   Rscript ${src_direc}/jlim.impute.make.perm.matrix.R \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_\${batch_num}/${cons1}.batch_\${batch_num} \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_\${batch_num}/${cons1}.batch_\${batch_num} \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \\
           $NUM_PERM \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
+          ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
 
-  gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
+  gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
 
   Rscript ${src_direc}/jlim.impute.make.perm.matrix.R \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_\${batch_num}/${cons2}.batch_\${batch_num} \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_\${batch_num}/${cons2}.batch_\${batch_num} \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \\
           $NUM_PERM \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
+          ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
 
-  gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
+  gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
 
   # Clean up permutation data:
-  if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz ] && \\
-     [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz ]; then
-    rm -rf ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_\${batch_num} \\
-           ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_\${batch_num}
+  if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz ] && \\
+     [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz ]; then
+    rm -rf ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons1}_${indep_num1}/batch_\${batch_num} \\
+           ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/perm/${cons2}_${indep_num2}/batch_\${batch_num}
   fi
 
 
   # Analyze first trait as primary:
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc
 
   # Generate JLIM configuration file using dosage data:
   jlim_gencfg.sh --tr1-name ${cons1}_${indep_num1} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
                  --tr2-genotype-filetype dosage \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt.tmp
 
   # Generate JLIM configuration file using ped data:
   jlim_gencfg.sh --tr1-name ${cons1}_${indep_num1} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
                  --tr2-genotype-filetype ped \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp
 
   # Analyze second trait as primary:
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz
 
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc
 
   # Generate JLIM configuration file using dosage data:
   jlim_gencfg.sh --tr1-name ${cons2}_${indep_num2} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
                  --tr2-genotype-filetype dosage \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt.tmp
 
   # Generate JLIM configuration file using ped data:
   jlim_gencfg.sh --tr1-name ${cons2}_${indep_num2} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
                  --tr2-genotype-filetype ped \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp
 
 
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz
 
   # Update config files to use our R2-union coordinates and the correct permutation batch:
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt.tmp | \\
     awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp | \\
     awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt
 
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt.tmp | \\
     awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp | \\
     awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt
 
 
-  rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt.tmp \\
-     ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp \\
-     ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt.tmp \\
-     ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp
+  rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt.tmp \\
+     ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp \\
+     ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt.tmp \\
+     ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt.tmp
 
 
   # Run JLIM forward comparison with dosage data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.out.txt
 
   # Run JLIM forward comparison with ped data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_\${batch_num}.jlim.ped.out.txt
 
   # Run JLIM reverse comparison with dosage data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.out.txt
 
   # Run JLIM reverse comparison with ped data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_\${batch_num}.jlim.ped.out.txt
 done # batch_num" > \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.sh
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.sh
 
     # Launch this job conditional on all permutations completing successfully:
-    sbatch --dependency=afterok${perm_job_list} ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.sh
+    sbatch --dependency=afterok${perm_job_list} ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.sh
 
-  done < ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
 done # region_num
 
 
@@ -1588,7 +1588,7 @@ done # region_num
 for region_num in ${!immchip_chr[@]}; do
 # for region_num in 1; do
 
-  [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
   while read region cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end; do
     # Skip the header row:
@@ -1596,54 +1596,54 @@ for region_num in ${!immchip_chr[@]}; do
 
     # Check forward dosage files:
     echo -n "$region $cons1 $indep_num1 $cons2 $indep_num2 forward dosage "
-    for f in ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_*.jlim.cfg.txt; do
+    for f in ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_*.jlim.cfg.txt; do
       cut -f 1,3,4,5,6,7,8,9,10,12,13,14,15,17 $f | md5sum
     done | sort | uniq | wc -l
 
     # Check reverse dosage files:
     echo -n "$region $cons1 $indep_num1 $cons2 $indep_num2 reverse dosage "
-    for f in ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_*.jlim.cfg.txt; do
+    for f in ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_*.jlim.cfg.txt; do
       cut -f 1,3,4,5,6,7,8,9,10,12,13,14,15,17 $f | md5sum
     done | sort | uniq | wc -l
 
     # Check forward ped files:
     echo -n "$region $cons1 $indep_num1 $cons2 $indep_num2 forward ped "
-    for f in ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_*.jlim.ped.cfg.txt; do
+    for f in ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_*.jlim.ped.cfg.txt; do
       cut -f 1,3,4,5,6,7,8,9,10,12,13,14,15,17 $f | md5sum
     done | sort | uniq | wc -l
 
     # Check reverse dosage files:
     echo -n "$region $cons1 $indep_num1 $cons2 $indep_num2 reverse ped "
-    for f in ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_*.jlim.ped.cfg.txt; do
+    for f in ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_*.jlim.ped.cfg.txt; do
       cut -f 1,3,4,5,6,7,8,9,10,12,13,14,15,17 $f | md5sum
     done | sort | uniq | wc -l
 
     # echo "$region $cons1 $indep_num1 $cons2 $indep_num2 $jlim_start $jlim_end"
 
-  done < ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
-done > ${temp_direc}/13_jlim_impute/4_jlim/wrong.inputs.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
+done > ${temp_direc}/8_jlim_impute/4_jlim/wrong.inputs.txt
 
 
 # Check that all jobs ran successfully:
 for region_num in ${!immchip_chr[@]}; do
 
-  [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
   while read region cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end; do
     # Skip the header row:
     [ "$region" == "region_num" ] && continue
 
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
-      if [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt ] || \
-         [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt ]; then
+      if [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt ] || \
+         [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt ]; then
         echo "Region $region_num ${cons1}_${indep_num1} ${cons2}_${indep_num2} batch $batch_num NOT done"
       fi
-      if [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt ] || \
-         [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt ]; then
+      if [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt ] || \
+         [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt ]; then
         echo "Region $region_num ${cons2}_${indep_num2} ${cons1}_${indep_num1} batch $batch_num NOT done"
       fi
     done # batch_num
-  done < ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
 done # region_num
 
 
@@ -1652,7 +1652,7 @@ echo "region_num trait_pair trait jlim_start jlim_end snp chr bp a1 a2 z p" > \
   ${results_direc}/jlim_impute/jlim.cond.impute.jlim.input.stats.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 for region_num in ${!immchip_chr[@]}; do
 
-  [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
   region_chr=${immchip_chr["$region_num"]}
   region_start=${immchip_start["$region_num"]}
@@ -1663,7 +1663,7 @@ for region_num in ${!immchip_chr[@]}; do
     [ "$region" == "region_num" ] && continue
 
     # Get association stats for first trait:
-    cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt | \
+    cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.${region_chr}.${region_start}.${region_end}.txt | \
       awk -v region=$region_num \
           -v cons1=$cons1 -v indep_num1=$indep_num1 \
           -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -1672,7 +1672,7 @@ for region_num in ${!immchip_chr[@]}; do
       ${results_direc}/jlim_impute/jlim.cond.impute.jlim.input.stats.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 
     # Get association stats for second trait:
-    cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt | \
+    cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.${region_chr}.${region_start}.${region_end}.txt | \
       awk -v region=$region_num \
           -v cons1=$cons1 -v indep_num1=$indep_num1 \
           -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -1680,7 +1680,7 @@ for region_num in ${!immchip_chr[@]}; do
         'NR!=1 { print region,cons1"_"indep_num1"."cons2"_"indep_num2,cons2"_"indep_num2,start,end,$1,$2,$3,$4,$5,$6,$7 }' >> \
       ${results_direc}/jlim_impute/jlim.cond.impute.jlim.input.stats.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 
-  done < ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
 done # region_num
 
 gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.jlim.input.stats.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
@@ -1691,7 +1691,7 @@ echo "region_num trait_pair chr bp snp a1 a2" > \
   ${results_direc}/jlim_impute/jlim.cond.impute.ref.ld.snps.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 for region_num in ${!immchip_chr[@]}; do
 
-  [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
   region_chr=${immchip_chr["$region_num"]}
   region_start=${immchip_start["$region_num"]}
@@ -1702,14 +1702,14 @@ for region_num in ${!immchip_chr[@]}; do
     [ "$region" == "region_num" ] && continue
 
     # Get reference LD SNPs for the first trait:
-    zcat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}.txt.gz | \
+    zcat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}.txt.gz | \
       awk -v region=$region_num \
           -v cons1=$cons1 -v indep_num1=$indep_num1 \
           -v cons2=$cons2 -v indep_num2=$indep_num2 \
         '{ print region,cons1"_"indep_num1"."cons2"_"indep_num2,$1,$2,$3,$4,$5 }' >> \
       ${results_direc}/jlim_impute/jlim.cond.impute.ref.ld.snps.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 
-  done < ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
 done # region_num
 
 gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.ref.ld.snps.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
@@ -1720,7 +1720,7 @@ echo "region_num trait1 trait2 jlim_start jlim_end batch_num refgt gap p" > \
   ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
 for region_num in ${!immchip_chr[@]}; do
 
-  [ ! -f ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -f ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
   region_chr=${immchip_chr["$region_num"]}
   region_start=${immchip_start["$region_num"]}
@@ -1732,8 +1732,8 @@ for region_num in ${!immchip_chr[@]}; do
 
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
       # Obtain results for forward comparison (if it was successful):
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -1745,8 +1745,8 @@ for region_num in ${!immchip_chr[@]}; do
           ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
       fi
 
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -1760,8 +1760,8 @@ for region_num in ${!immchip_chr[@]}; do
 
 
       # Obtain results for reverse comparison (if it was successful):
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -1773,8 +1773,8 @@ for region_num in ${!immchip_chr[@]}; do
           ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
       fi
 
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -1788,7 +1788,7 @@ for region_num in ${!immchip_chr[@]}; do
 
     done # batch_num
 
-  done < ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt
 done # region_num
 
 gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
@@ -1806,72 +1806,72 @@ gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHO
 # analysis in immchip.jlim.cond.sh
 
 # Compile list of traits that were analyzed:
-> ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.txt
-> ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.txt
+> ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.txt
+> ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.txt
 for region_num in ${!immchip_chr[@]}; do
   # Skip regions that have no trait pairs to analyze:
-  [ ! -s ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
+  [ ! -s ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt ] && continue
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt | \
+  cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt | \
     awk 'NR!=1 && $3==0 && $5==0' >> \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.txt
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt | \
+  cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt | \
     awk 'NR!=1 && $3!=0 && $5!=0' >> \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.txt
 done # region_num
 
 for jlim_method in "ped" "dosage"; do
   # Compile JLIM statistics for each trait pair:
   echo -e "Region\tCons1\tAssocNum1\tCons2\tAssocNum2\tBatchNum\tStat\tP" > \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.results.impute.${jlim_method}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.results.impute.${jlim_method}.txt
   zcat ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt.gz | \
     tr '_' ' ' | \
     awk -v method=$jlim_method \
       'BEGIN{ OFS="\t" }
        NR!=1 && $3==0 && $5==0 && $9==method { print $1,$2,$3,$4,$5,$8,$10,$11 }' >> \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.results.impute.${jlim_method}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.results.impute.${jlim_method}.txt
 
   echo -e "Region\tCons1\tAssocNum1\tCons2\tAssocNum2\tBatchNum\tStat\tP" > \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.results.impute.cond.${jlim_method}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.results.impute.cond.${jlim_method}.txt
   zcat ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt.gz | \
     tr '_' ' ' | \
     awk -v method=$jlim_method \
       'BEGIN{ OFS="\t" }
        NR!=1 && $3!=0 && $5!=0 && $9==method { print $1,$2,$3,$4,$5,$8,$10,$11 }' >> \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.results.impute.cond.${jlim_method}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.results.impute.cond.${jlim_method}.txt
   ### The tab delimiter drama is because the next script expects results to be
   ### tab-delimited. I know.
 
   Rscript ${src_direc}/jlim.pairs.to.repeat.R \
-          ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.txt \
-          ${temp_direc}/13_jlim_impute/4_jlim/jlim.results.impute.${jlim_method}.txt \
+          ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.txt \
+          ${temp_direc}/8_jlim_impute/4_jlim/jlim.results.impute.${jlim_method}.txt \
           0.05 \
-          ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.${jlim_method}.new.txt
+          ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.${jlim_method}.new.txt
 
   Rscript ${src_direc}/jlim.pairs.to.repeat.R \
-          ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.txt \
-          ${temp_direc}/13_jlim_impute/4_jlim/jlim.results.impute.cond.${jlim_method}.txt \
+          ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.txt \
+          ${temp_direc}/8_jlim_impute/4_jlim/jlim.results.impute.cond.${jlim_method}.txt \
           0.05 \
-          ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.${jlim_method}.new.txt
+          ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.${jlim_method}.new.txt
 done # jlim_method
 
 
 # Is this as simple as re-running JLIM with updated coordinates?
 for jlim_method in "ped" "dosage"; do
   while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end; do
-    if [ ! -d ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} ] &&
-       [ ! -d ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons2}_${indep_num2}.${cons1}_${indep_num1} ]; then
+    if [ ! -d ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} ] &&
+       [ ! -d ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons2}_${indep_num2}.${cons1}_${indep_num1} ]; then
       echo "$region_num $cons1 $indep_num1 $cons2 $indep_num2 $jlim_start $jlim_end"
     fi
-  done < ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.${jlim_method}.new.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.${jlim_method}.new.txt
 
   while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end; do
-    if [ ! -d ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} ] &&
-       [ ! -d ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons2}_${indep_num2}.${cons1}_${indep_num1} ]; then
+    if [ ! -d ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} ] &&
+       [ ! -d ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons2}_${indep_num2}.${cons1}_${indep_num1} ]; then
       echo "$region_num $cons1 $indep_num1 $cons2 $indep_num2 $jlim_start $jlim_end"
     fi
-  done < ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.${jlim_method}.new.txt
+  done < ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.${jlim_method}.new.txt
 
 done # jlim_method
 ### It appears to be!
@@ -1879,8 +1879,8 @@ done # jlim_method
 
 # Combine conditional and unconditional loci to repeat:
 for jlim_method in "ped" "dosage"; do
-  cat ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.${jlim_method}.new.txt \
-      ${temp_direc}/13_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.${jlim_method}.new.txt | \
+  cat ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.${jlim_method}.new.txt \
+      ${temp_direc}/8_jlim_impute/4_jlim/jlim.trait.pairs.impute.cond.${jlim_method}.new.txt | \
     sort -k 1n,1 -k 2,2 -k 3n,3 -k 4,4 -k 5n,5 > \
     ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.${jlim_method}.txt
 done # jlim_method
@@ -1910,75 +1910,75 @@ while read region_num cons_1 indep_num_1 cons_2 indep_num_2 jlim_start jlim_end;
   # Re-run jlim_cfg.sh to generate config files for each batch:
   for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
     # Skip batches that have already been successfully re-analyzed:
-    [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt ] && \
-    [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt ] && \
+    [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt ] && \
+    [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt ] && \
     continue
     ### Note that this also prevents traits that are included twice (e.g.
     ### traitA-traitB and traitB-traitA) from being re-analyzed
 
     # Analyze first trait as primary:
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc
 
     # Generate JLIM configuration file using dosage data:
     jlim_gencfg.sh --tr1-name ${cons1}_${indep_num1} \
-                   --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
                    --tr2-genotype-filetype dosage \
-                   --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \
-                   --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.txt.tmp
+                   --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \
+                   --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.txt.tmp
 
     # Analyze second trait as primary:
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz
 
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc
 
     # Generate JLIM configuration file using dosage data:
     jlim_gencfg.sh --tr1-name ${cons2}_${indep_num2} \
-                   --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
                    --tr2-genotype-filetype dosage \
-                   --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \
-                   --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt.tmp
+                   --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \
+                   --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt.tmp
 
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz
 
 
     # Update config files to use our R2-union coordinates and the correct permutation batch:
-    cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.txt.tmp | \
+    cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.txt.tmp | \
       awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
-          -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_${batch_num}.gene.mperm.dump.all.gz \
+          -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_${batch_num}.gene.mperm.dump.all.gz \
         'BEGIN{ OFS = "\t" }
          { if (NR != 1) { $8=jlim_start; $9=jlim_end; $18=perm_file; }
            print }' > \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.new.txt
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.new.txt
 
-    cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt.tmp | \
+    cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt.tmp | \
       awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
-          -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_${batch_num}.gene.mperm.dump.all.gz \
+          -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_${batch_num}.gene.mperm.dump.all.gz \
         'BEGIN{ OFS = "\t" }
          { if (NR != 1) { $8=jlim_start; $9=jlim_end; $18=perm_file; }
            print }' > \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.new.txt
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.new.txt
 
-    rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.txt.tmp \
-       ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt.tmp
+    rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.txt.tmp \
+       ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt.tmp
 
 
     # Run JLIM forward comparison with dosage data:
-    run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.new.txt \
+    run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.cfg.new.txt \
                 0.8 \
-                ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt
+                ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt
 
     # Run JLIM reverse comparison with dosage data:
-    run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt \
+    run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.cfg.txt \
                 0.8 \
-                ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt
+                ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt
 
   done # batch_num
 done < ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.dosage.txt
@@ -2010,75 +2010,75 @@ while read region_num cons_1 indep_num_1 cons_2 indep_num_2 jlim_start jlim_end;
   # Re-run jlim_cfg.sh to generate config files for each batch:
   for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
     # Skip batches that have already been successfully re-analyzed:
-    [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt ] && \
-    [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt ] && \
+    [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt ] && \
+    [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt ] && \
     continue
     ### Note that this also prevents traits that are included twice (e.g.
     ### traitA-traitB and traitB-traitA) from being re-analyzed
 
     # Analyze first trait as primary:
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc
 
     # Generate JLIM configuration file using ped data:
     jlim_gencfg.sh --tr1-name ${cons1}_${indep_num1} \
-                   --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
                    --tr2-genotype-filetype ped \
-                   --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \
-                   --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.txt.tmp
+                   --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons1}_${indep_num1}.indexSNP.txt \
+                   --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.txt.tmp
 
     # Analyze second trait as primary:
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.assoc \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.gene.assoc.linear.gz
 
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc
 
     # Generate JLIM configuration file using ped data:
     jlim_gencfg.sh --tr1-name ${cons2}_${indep_num2} \
-                   --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
                    --tr2-genotype-filetype ped \
-                   --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \
-                   --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
-                   --out ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt.tmp
+                   --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/${cons2}_${indep_num2}.indexSNP.txt \
+                   --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2} \
+                   --out ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt.tmp
 
-    mv ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz
+    mv ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.assoc \
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.gene.assoc.linear.gz
 
 
     # Update config files to use our R2-union coordinates and the correct permutation batch:
-    cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.txt.tmp | \
+    cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.txt.tmp | \
       awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
-          -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_${batch_num}.gene.mperm.dump.all.gz \
+          -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons2}_${indep_num2}.batch_${batch_num}.gene.mperm.dump.all.gz \
         'BEGIN{ OFS = "\t" }
          { if (NR != 1) { $8=jlim_start; $9=jlim_end; $18=perm_file; }
            print }' > \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.new.txt
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.new.txt
 
-    cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt.tmp | \
+    cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt.tmp | \
       awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
-          -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_${batch_num}.gene.mperm.dump.all.gz \
+          -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${cons1}_${indep_num1}.${cons2}_${indep_num2}/locus.${region_chr}.${region_start}.${region_end}/${cons1}_${indep_num1}.batch_${batch_num}.gene.mperm.dump.all.gz \
         'BEGIN{ OFS = "\t" }
          { if (NR != 1) { $8=jlim_start; $9=jlim_end; $18=perm_file; }
            print }' > \
-      ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.new.txt
+      ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.new.txt
 
 
-    rm ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.txt.tmp \
-       ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt.tmp
+    rm ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.txt.tmp \
+       ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt.tmp
 
     # Run JLIM forward comparison with ped data:
-    run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.new.txt \
+    run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.cfg.new.txt \
                 0.8 \
-                ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt
+                ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt
 
     # Run JLIM reverse comparison with ped data:
-    run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt \
+    run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.cfg.txt \
                 0.8 \
-                ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt
+                ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt
 
   done # batch_num
 done < ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.ped.txt
@@ -2094,8 +2094,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.ped.txt | \
   while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end; do
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
       # Obtain results for forward comparison (if it was successful):
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.ped.out.new.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -2108,8 +2108,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.ped.txt | \
       fi
 
       # Obtain results for reverse comparison (if it was successful):
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.ped.out.new.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -2128,8 +2128,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.dosage.txt | \
   while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end; do
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
       # Obtain results for forward comparison (if it was successful):
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.out.new.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -2142,8 +2142,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.pairs.to.repeat.dosage.txt | \
       fi
 
       # # Obtain results for reverse comparison (if it was successful):
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt ]; then
-        cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt ]; then
+        cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.out.new.txt | \
           awk -v region=$region_num -v batch=$batch_num \
               -v cons1=$cons1 -v indep_num1=$indep_num1 \
               -v cons2=$cons2 -v indep_num2=$indep_num2 \
@@ -2654,59 +2654,59 @@ strat_cons_list=\"\$strat_cons_list t1d\"
 strat_list[\"sle\"]=\"sle_g.EA sle_o\"
 strat_list[\"t1d\"]=\"GRID ASP\"
 
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets
 
 # Identify duplicates to remove from either trait:
-cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/\${cons1}.imiss \\
-    ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/\${cons2}.imiss | \\
+cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/\${cons1}.imiss \\
+    ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/\${cons2}.imiss | \\
   awk '!a[\$0]++ { print \$1,\$2,\$3,\$4,\$5,\$6 }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.imiss
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.imiss
 
-cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/\${cons1}.fam \\
-    ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/\${cons2}.fam | \\
+cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/\${cons1}.fam \\
+    ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/\${cons2}.fam | \\
   awk '!a[\$0]++ { print }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam
 
 cat ${results_direc}/jlim_impute/all.cons.merged.genome | \\
   awk '\$10>=0.9' | \\
   sort -k 1,1 | \\
   join -j 1 - \\
-            <(sort -k 1,1 ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam) | \\
+            <(sort -k 1,1 ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam) | \\
   sort -k 3,3 | \\
   join -1 3 -2 1 - \\
-                 <(sort -k 1,1 ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam) | \\
+                 <(sort -k 1,1 ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam) | \\
   awk 'BEGIN { OFS=\"\\\t\";
                print \"FID1\",\"IID1\",\"FID2\",\"IID2\",\"RT\",\"EZ\",\"Z0\",\"Z1\",\"Z2\",\"PI_HAT\",\"PHE\",\"DST\",\"PPC\",\"RATIO\",\"IBS0\",\"IBS1\",\"IBS2\",\"HOMHOM\",\"HETHET\" }
        { print \$2,\$3,\$1,\$4,\$5,\$6,\$7,\$8,\$9,\$10,\$11,\$12,\$13,\$14,\$15,\$16,\$17,\$18,\$19 }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.duplicates.genome
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.duplicates.genome
 ### Note that we filter by PI_HAT >= 0.9; we are only interested to remove
 ### true duplicates, not low-level (e.g. ~ 0.185) relatives that are likely
 ### to be spurious.
 
 Rscript ${src_direc}/identify.dups.and.rels.to.remove.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.duplicates.genome \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.imiss \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.duplicates.genome \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.imiss \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.fam \\
         TRUE \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets \\
         \${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}
 
 # Remove duplicates from each stratum of first trait and repeat association testing:
 echo \"region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p\" > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
 for stratum in \${strat_list[\$cons1]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/\${cons1}.\${stratum}.region_\${region_num}.imputed.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/\${cons1}.\${stratum}.region_\${region_num}.imputed.2pc.sample \\
-                  -excl-samples ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.relatives.to.remove.txt \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/\${cons1}.\${stratum}.region_\${region_num}.imputed.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/\${cons1}.\${stratum}.region_\${region_num}.imputed.2pc.sample \\
+                  -excl-samples ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.relatives.to.remove.txt \\
                   -ofiletype bgen_v1.1 \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                  -os ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                  -os ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample
 
   if [ \"\$indep_num1\" -eq 0 ]; then
     condition_snps=\"\"
   else
-    condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/region_\${region_num}.\${cons1}.lead.snps.txt | \\
+    condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/region_\${region_num}.\${cons1}.lead.snps.txt | \\
                         awk -v strat=\$stratum -v indep=\$indep_num1 \\
                           'BEGIN{ ORS = \" \" }
                            \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -2716,37 +2716,37 @@ for stratum in \${strat_list[\$cons1]}; do
   safestrat=\$(echo \$stratum | sed 's/-/_/g')
 
   # Run association test:
-  snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                       ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                       ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
                  -frequentist 1 \\
                  -method expected \\
                  -pheno pheno \\
                  -cov_names pc1 pc2 \\
                  -condition_on \$condition_snps \\
-                 -o ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${safestrat}.snptest
+                 -o ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${safestrat}.snptest
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${safestrat}.snptest | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${safestrat}.snptest | \\
     awk -v region=\$region_num -v cons=\$cons1 -v strat=\$stratum -v assoc=\$indep_num1 \\
     '!/^#/ && \$2 != \"rsid\" { print region,cons,strat,assoc,\$2,\$3,\$4,\$5,\$6,\$44,\$45,\$42}' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
 
-  # rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${safestrat}.snptest
+  # rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${safestrat}.snptest
 done # stratum
 
 # Remove duplicates from each stratum of second trait and repeat association testing:
 for stratum in \${strat_list[\$cons2]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/\${cons2}.\${stratum}.region_\${region_num}.imputed.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/\${cons2}.\${stratum}.region_\${region_num}.imputed.2pc.sample \\
-                  -excl-samples ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.relatives.to.remove.txt \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/\${cons2}.\${stratum}.region_\${region_num}.imputed.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/\${cons2}.\${stratum}.region_\${region_num}.imputed.2pc.sample \\
+                  -excl-samples ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.relatives.to.remove.txt \\
                   -ofiletype bgen_v1.1 \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                  -os ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                  -os ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample
 
   if [ \"\$indep_num2\" -eq 0 ]; then
     condition_snps=\"\"
   else
-    condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/region_\${region_num}.\${cons2}.lead.snps.txt | \\
+    condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/region_\${region_num}.\${cons2}.lead.snps.txt | \\
                         awk -v strat=\$stratum -v indep=\$indep_num2 \\
                           'BEGIN{ ORS = \" \" }
                            \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -2756,52 +2756,52 @@ for stratum in \${strat_list[\$cons2]}; do
   safestrat=\$(echo \$stratum | sed 's/-/_/g')
 
   # Run association test:
-  snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                       ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                       ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
                  -frequentist 1 \\
                  -method expected \\
                  -pheno pheno \\
                  -cov_names pc1 pc2 \\
                  -condition_on \$condition_snps \\
-                 -o ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.\${safestrat}.snptest
+                 -o ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.\${safestrat}.snptest
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.\${safestrat}.snptest | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.\${safestrat}.snptest | \\
     awk -v region=\$region_num -v cons=\$cons2 -v strat=\$stratum -v assoc=\$indep_num2 \\
     '!/^#/ && \$2 != \"rsid\" { print region,cons,strat,assoc,\$2,\$3,\$4,\$5,\$6,\$44,\$45,\$42}' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
 
-  # rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.\${safestrat}.snptest
+  # rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.\${safestrat}.snptest
 done # stratum
 
 
 # Run meta analysis:
 Rscript ${src_direc}/jlim.indep.metafor.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt \\
         $MAX_HET_I2 \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}
 
 # Clean up raw association results:
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.*.snptest \\
-   ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.*.snptest \\
+   ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.assoc.results.txt
 
 
 # Produce primary trait summary data:
-mv ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.metafor.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt
-mv ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.metafor.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt
+mv ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons1}_\${indep_num1}.metafor.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt
+mv ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/region_\${region_num}.\${cons2}_\${indep_num2}.metafor.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt
 
 
 # Put secondary trait data in expected directory:
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}
 
-cp ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear
-cp ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear
+cp ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear
+cp ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt \\
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear
 
 
 # Reference LD data:
@@ -2810,64 +2810,64 @@ vcf-query ${data_direc}/1000GP_Phase3/ALL.chr\${region_chr}.phase3_shapeit2_mvnc
           -c $KG_EUR_SAMPLES \\
           -f '%CHROM\\\t%POS\\\t%ID\\\t%REF\\\t%ALT\\\t%QUAL\\\t%FILTER[\\\t%GT]\\\n' | \\
   sed 's/|/\\\t/g' > \\
-${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/ref.ld.txt
+${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/ref.ld.txt
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/ref.ld.txt | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/ref.ld.txt | \\
   awk '{ print \$1\":\"\$2\":\"\$4\":\"\$5,\$0 }' | \\
   sort -k 1,1 | \\
-  join -j 1 - <(sort -k 1,1 ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt) | \\
+  join -j 1 - <(sort -k 1,1 ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt) | \\
   cut -d ' ' -f 2- | \\
   sort -k 2n,2 | \\
   tr ' ' '\\\t' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}.txt
 ### NOTE: This code assumes there are no strand flips
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}.txt
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}.txt
 
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/ref.ld.txt
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/ref.ld.txt
 
 
 # Produce dosage file for first trait:
 mergelist=\"\"
-> ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.mergelist.txt
+> ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.mergelist.txt
 for stratum in \${strat_list[\$cons1]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -incl-rsids <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt | \\
+                  -incl-rsids <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt | \\
                                   awk 'NR!=1 { print \$2 }') \\
-                  -map-id-data ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen
-  mergelist=\"\$mergelist -g ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen \\
--s ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample\"
+                  -map-id-data ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt \\
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen
+  mergelist=\"\$mergelist -g ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen \\
+-s ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample\"
 
-  plink --bgen ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-        --sample ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
-        --extract <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt | \\
+  plink --bgen ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+        --sample ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+        --extract <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt | \\
                       awk 'NR!=1 { print \$8 }') \\
-        --update-name ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt 8 2 1 \\
+        --update-name ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt 8 2 1 \\
         --mind 0 \\
         --allow-no-sex \\
         --make-bed \\
-        --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed
+        --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed
 
-  echo \"${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed\" >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.mergelist.txt
+  echo \"${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.renamed\" >> \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.mergelist.txt
 done # stratum
 
 qctool_v2.1-dev \$mergelist \\
                 -bgen-permitted-input-rounding-error 0.001 \\
-                -og ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.gen \\
-                -os ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.sample
+                -og ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.gen \\
+                -os ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.sample
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.sample | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.sample | \\
   awk 'NR==3 { samples=\$1 }
        NR>3 { samples=samples\"\\\t\"\$1 }
        END { OFS=\"\\\t\";
              print \"clone\",\"Start\",\"A1\",\"A2\",samples }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.dosage
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.gen | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.merged.gen | \\
   awk 'BEGIN{ OFS=\"\\\t\"}
        { split(\$0, a);
          dosage=\"\"
@@ -2876,62 +2876,62 @@ cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep
          }
          print \$3,\$4,\$5,\$6\"\"dosage
        }' >> \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.dosage
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.dosage
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.dosage
 
-plink --merge-list ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.mergelist.txt \\
+plink --merge-list ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.mergelist.txt \\
       --mind 0 \\
       --allow-no-sex \\
       --recode \\
-      --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}
+      --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}
 
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.{bed,bim,fam,map,nosex,log}
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.{bed,bim,fam,map,nosex,log}
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.ped
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.ped
 
 
 # Produce dosage file for second trait:
 mergelist=\"\"
-> ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.mergelist.txt
+> ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.mergelist.txt
 for stratum in \${strat_list[\$cons2]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
                   -bgen-permitted-input-rounding-error 0.001 \\
-                  -incl-rsids <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt | \\
+                  -incl-rsids <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt | \\
                                   awk 'NR!=1 { print \$2 }') \\
-                  -map-id-data ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt \\
-                  -og ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen
-  mergelist=\"\$mergelist -g ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen \\
--s ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample\"
+                  -map-id-data ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt \\
+                  -og ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen
+  mergelist=\"\$mergelist -g ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed.bgen \\
+-s ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample\"
 
-  plink --bgen ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-        --sample ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
-        --extract <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt | \\
+  plink --bgen ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+        --sample ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+        --extract <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt | \\
                       awk 'NR!=1 { print \$8 }') \\
-        --update-name ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt 8 2 1 \\
+        --update-name ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt 8 2 1 \\
         --mind 0 \\
         --allow-no-sex \\
         --make-bed \\
-        --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed
+        --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed
 
-  echo \"${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed\" >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.mergelist.txt
+  echo \"${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.renamed\" >> \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.mergelist.txt
 done # stratum
 
 qctool_v2.1-dev \$mergelist \\
                 -bgen-permitted-input-rounding-error 0.001 \\
-                -og ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.gen \\
-                -os ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.sample
+                -og ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.gen \\
+                -os ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.sample
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.sample | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.sample | \\
   awk 'NR==3 { samples=\$1 }
        NR>3 { samples=samples\"\\\t\"\$1 }
        END { OFS=\"\\\t\";
              print \"clone\",\"Start\",\"A1\",\"A2\",samples }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.dosage
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.gen | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.merged.gen | \\
   awk 'BEGIN{ OFS=\"\\\t\"}
        { split(\$0, a);
          dosage=\"\"
@@ -2940,40 +2940,40 @@ cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep
          }
          print \$3,\$4,\$5,\$6\"\"dosage
        }' >> \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.dosage
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.dosage
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.dosage
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.dosage
 
-plink --merge-list ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.mergelist.txt \\
+plink --merge-list ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.mergelist.txt \\
       --mind 0 \\
       --allow-no-sex \\
       --recode \\
-      --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}
+      --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}
 
-rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.{bed,bim,fam,map,nosex,log}
+rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.{bed,bim,fam,map,nosex,log}
 
-gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.ped
+gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.ped
 
 
 # Compile all primary and secondary trait .sample files for permutations:
 echo \"cons stratum ID_1 ID_2 missing father mother sex pheno pc1 pc2\" > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.sample.data.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.sample.data.txt
 for stratum in \${strat_list[\$cons1]}; do
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample | \\
     awk -v cons=\$cons1 -v strat=\$stratum \\
       'NR>2 { print cons,strat,\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9 }' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.sample.data.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.sample.data.txt
 done # stratum
 
 echo \"cons stratum ID_1 ID_2 missing father mother sex pheno pc1 pc2\" > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.sample.data.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.sample.data.txt
 for stratum in \${strat_list[\$cons2]}; do
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample | \\
     awk -v cons=\$cons2 -v strat=\$stratum \\
       'NR>2 { print cons,strat,\$1,\$2,\$3,\$4,\$5,\$6,\$7,\$8,\$9 }' >> \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.sample.data.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.sample.data.txt
 done # stratum" > \
-  ${temp_direc}/13_jlim_impute/4_jlim/jlim.assoc.script.sh
+  ${temp_direc}/8_jlim_impute/4_jlim/jlim.assoc.script.sh
 
 
 # Script to run permutations in job arrays:
@@ -3054,8 +3054,8 @@ strat_list[\"t1d\"]=\"GRID ASP\"
 
 
 # Permute phenotypes for the primary and secondary traits:
-mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num} \\
-         ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num} \\
+mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num} \\
+         ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num} \\
          /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets
 
 # Produce header for each primary trait permutation .sample file:
@@ -3068,7 +3068,7 @@ done # stratum
 
 # Permute phenotypes and append to headers:
 Rscript ${src_direc}/jlim.permute.sample.pheno.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.sample.data.txt \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.sample.data.txt \\
         $NUM_PERM \\
         /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets/\${cons1}
 
@@ -3083,29 +3083,29 @@ done # stratum
 
 # Permute phenotypes and append to headers:
 Rscript ${src_direc}/jlim.permute.sample.pheno.R \\
-        ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.sample.data.txt \\
+        ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.sample.data.txt \\
         $NUM_PERM \\
         /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets/\${cons2}
 
 
 # Copy .bgen files to RAM partition:
-# cp ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.*.region_\${region_num}.imputed.nodup.bgen \\
-#    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.*.region_\${region_num}.imputed.nodup.bgen \\
+# cp ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.*.region_\${region_num}.imputed.nodup.bgen \\
+#    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.*.region_\${region_num}.imputed.nodup.bgen \\
 #    /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets
 
 
 # Filter .bgen files for SNPs present in secondary trait association studies:
 for stratum in \${strat_list[\$cons1]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
                   -incl-rsids <(join -j 1 -o 2.2 \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
                                       awk '{ print \$2\":\"\$3 }' | \\
                                       sort) \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons1}_\${indep_num1}.\${stratum}.rename.snps.txt | \\
                                       awk '{ print \$3\":\"\$4,\$2 }' | \\
                                       sort -k 1,1)
-                                cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/region_\${region_num}.\${cons1}.lead.snps.txt | \\
+                                cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/region_\${region_num}.\${cons1}.lead.snps.txt | \\
                                   awk -v strat=\$stratum -v indep=\$indep_num1 \\
                                     '\$3!=(indep-1) && \$4==strat { print \$5 }') \\
                   -ofiletype bgen_v1.1 \\
@@ -3113,16 +3113,16 @@ for stratum in \${strat_list[\$cons1]}; do
                   -og /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.bgen
 done # stratum
 for stratum in \${strat_list[\$cons2]}; do
-  qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
-                  -s ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.bgen \\
+                  -s ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
                   -incl-rsids <(join -j 1 -o 2.2 \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
                                       awk '{ print \$2\":\"\$3 }' | \\
                                       sort) \\
-                                  <(cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt | \\
+                                  <(cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/region_\${region_num}.\${cons2}_\${indep_num2}.\${stratum}.rename.snps.txt | \\
                                       awk '{ print \$3\":\"\$4,\$2 }' | \\
                                       sort -k 1,1)
-                                cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/region_\${region_num}.\${cons2}.lead.snps.txt | \\
+                                cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/region_\${region_num}.\${cons2}.lead.snps.txt | \\
                                   awk -v strat=\$stratum -v indep=\$indep_num2 \\
                                     '\$3!=(indep-1) && \$4==strat { print \$5 }') \\
                   -ofiletype bgen_v1.1 \\
@@ -3134,11 +3134,11 @@ done # stratum
 
 # Copy unpermuted dataset as permutation 0:
 for stratum in \${strat_list[\$cons1]}; do
-  cp ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  cp ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons1}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
     /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets/\${cons1}.\${stratum}.perm_0.sample
 done # stratum
 for stratum in \${strat_list[\$cons2]}; do
-  cp ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
+  cp ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/datasets/\${cons2}.\${stratum}.region_\${region_num}.imputed.nodup.sample \\
     /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/datasets/\${cons2}.\${stratum}.perm_0.sample
 done # stratum
 
@@ -3155,7 +3155,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
     if [ \"\$indep_num1\" -eq 0 ]; then
       condition_snps=\"\"
     else
-      condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/region_\${region_num}.\${cons1}.lead.snps.txt | \\
+      condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons1}/region_\${region_num}.\${cons1}.lead.snps.txt | \\
                           awk -v strat=\$stratum -v indep=\$indep_num1 \\
                            'BEGIN{ ORS = \" \" }
                             \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -3195,7 +3195,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
 
   # Transfer meta analysis results to scratch partition:
   mv /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/region_\${region_num}.\${cons1}_\${indep_num1}.metafor.txt \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num}/\${cons1}.batch_\${batch_num}.perm_\${perm_num}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num}/\${cons1}.batch_\${batch_num}.perm_\${perm_num}.txt
 
   # Clean up association results and permuted .sample file:
   rm /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/region_\${region_num}.\${cons1}_\${indep_num1}.assoc.results.batch_\${batch_num}.perm_\${perm_num}.txt \\
@@ -3215,7 +3215,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
     if [ \"\$indep_num2\" -eq 0 ]; then
       condition_snps=\"\"
     else
-      condition_snps=\$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/region_\${region_num}.\${cons2}.lead.snps.txt | \\
+      condition_snps=\$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_\${region_num}/\${cons2}/region_\${region_num}.\${cons2}.lead.snps.txt | \\
                           awk -v strat=\$stratum -v indep=\$indep_num2 \\
                            'BEGIN{ ORS = \" \" }
                             \$3!=(indep-1) && \$4==strat { print \$5 }')
@@ -3255,7 +3255,7 @@ for perm_num in \$(seq 0 $NUM_PERM); do
 
   # Transfer meta analysis results to scratch partition:
   mv /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/region_\${region_num}.\${cons2}_\${indep_num2}.metafor.txt \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num}/\${cons2}.batch_\${batch_num}.perm_\${perm_num}.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num}/\${cons2}.batch_\${batch_num}.perm_\${perm_num}.txt
 
   # Clean up association results and permuted .sample file:
   rm /dev/shm/${USER}/perm/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/batch_\${batch_num}/region_\${region_num}.\${cons2}_\${indep_num2}.assoc.results.batch_\${batch_num}.perm_\${perm_num}.txt \\
@@ -3279,7 +3279,7 @@ fi
 if [ ! \"\$(ls -A /dev/shm/${USER})\" ]; then
   rm -rf /dev/shm/${USER}
 fi" > \
-  ${temp_direc}/13_jlim_impute/4_jlim/jlim.permute.script.sh
+  ${temp_direc}/8_jlim_impute/4_jlim/jlim.permute.script.sh
 
 
 # Script to collect permutations and run JLIM. We run this as a single job, rather
@@ -3362,162 +3362,162 @@ strat_list[\"t1d\"]=\"GRID ASP\"
 
 
 # Generate IndexSNP files:
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
   sort -k 7g,7 | \\
   awk -v jlim_start=\$region_start -v jlim_end=\$region_end \\
     'BEGIN { OFS=\"\\\t\";
              print \"CHR\",\"SNP\",\"BP\",\"STARTBP\",\"ENDBP\" }
      NR==2 { print \$2,\$1,\$3,jlim_start,jlim_end }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.indexSNP.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.indexSNP.txt
 
-cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
+cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.\${region_chr}.\${region_start}.\${region_end}.txt | \\
   sort -k 7g,7 | \\
   awk -v jlim_start=\$region_start -v jlim_end=\$region_end \\
     'BEGIN { OFS=\"\\\t\";
              print \"CHR\",\"SNP\",\"BP\",\"STARTBP\",\"ENDBP\" }
      NR==2 { print \$2,\$1,\$3,jlim_start,jlim_end }' > \\
-  ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.indexSNP.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.indexSNP.txt
 
 
 for batch_num in \$(seq 1 $NUM_PERM_BATCHES); do
   # Compile permutations into JLIM perm matrix format:
   Rscript ${src_direc}/jlim.impute.make.perm.matrix.R \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num}/\${cons1}.batch_\${batch_num} \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear.gz \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num}/\${cons1}.batch_\${batch_num} \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear.gz \\
           $NUM_PERM \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
+          ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
 
-  gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
+  gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all
 
   Rscript ${src_direc}/jlim.impute.make.perm.matrix.R \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num}/\${cons2}.batch_\${batch_num} \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear.gz \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num}/\${cons2}.batch_\${batch_num} \\
+          ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear.gz \\
           $NUM_PERM \\
-          ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
+          ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
 
-  gzip -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
+  gzip -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all
 
   # Clean up permutation data:
-  if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz ] && \\
-     [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz ]; then
-    rm -rf ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num} \\
-           ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num}
+  if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz ] && \\
+     [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz ]; then
+    rm -rf ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons1}_\${indep_num1}/batch_\${batch_num} \\
+           ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/perm/\${cons2}_\${indep_num2}/batch_\${batch_num}
   fi
 
 
   # Analyze first trait as primary:
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear.gz \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.assoc
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear.gz \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.assoc
 
   # Generate JLIM configuration file using dosage data:
   jlim_gencfg.sh --tr1-name \${cons1}_\${indep_num1} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
                  --tr2-genotype-filetype dosage \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp
 
   # Generate JLIM configuration file using ped data:
   jlim_gencfg.sh --tr1-name \${cons1}_\${indep_num1} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
                  --tr2-genotype-filetype ped \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons1}_\${indep_num1}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp
 
   # Analyze second trait as primary:
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.assoc \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear.gz
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.assoc \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.gene.assoc.linear.gz
 
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear.gz \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.assoc
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear.gz \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.assoc
 
   # Generate JLIM configuration file using dosage data:
   jlim_gencfg.sh --tr1-name \${cons2}_\${indep_num2} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
                  --tr2-genotype-filetype dosage \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp
 
   # Generate JLIM configuration file using ped data:
   jlim_gencfg.sh --tr1-name \${cons2}_\${indep_num2} \\
-                 --tr1-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --tr1-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
                  --tr2-genotype-filetype ped \\
-                 --tr2-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --idxSNP-file ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.indexSNP.txt \\
-                 --refld-dir ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
-                 --out ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp
+                 --tr2-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --idxSNP-file ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/\${cons2}_\${indep_num2}.indexSNP.txt \\
+                 --refld-dir ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2} \\
+                 --out ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp
 
 
-  mv ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.assoc \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear.gz
+  mv ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.assoc \\
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.gene.assoc.linear.gz
 
   # Update config files to use our R2-union coordinates and the correct permutation batch:
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp | \\
     awk -v jlim_start=\$jlim_start -v jlim_end=\$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp | \\
     awk -v jlim_start=\$jlim_start -v jlim_end=\$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons2}_\${indep_num2}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt
 
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp | \\
     awk -v jlim_start=\$jlim_start -v jlim_end=\$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt
 
-  cat ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp | \\
+  cat ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp | \\
     awk -v jlim_start=\$jlim_start -v jlim_end=\$jlim_end \\
-        -v perm_file=${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
+        -v perm_file=${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}/locus.\${region_chr}.\${region_start}.\${region_end}/\${cons1}_\${indep_num1}.batch_\${batch_num}.gene.mperm.dump.all.gz \\
       'BEGIN{ OFS = \"\\\t\" }
        { if (NR != 1) { \$8=jlim_start; \$9=jlim_end; \$18=perm_file; }
          print }' > \\
-    ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt
+    ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt
 
 
-  rm ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp \\
-     ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp \\
-     ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp \\
-     ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp
+  rm ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp \\
+     ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp \\
+     ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt.tmp \\
+     ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt.tmp
 
 
   # Run JLIM forward comparison with dosage data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.out.txt
 
   # Run JLIM forward comparison with ped data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons1}_\${indep_num1}.\${cons2}_\${indep_num2}.batch_\${batch_num}.jlim.manual.ped.out.txt
 
   # Run JLIM reverse comparison with dosage data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.out.txt
 
   # Run JLIM reverse comparison with ped data:
-  run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt \\
+  run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.cfg.txt \\
               0.8 \\
-              ${temp_direc}/13_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.out.txt
+              ${temp_direc}/8_jlim_impute/4_jlim/region_\${region_num}/region_\${region_num}.\${cons2}_\${indep_num2}.\${cons1}_\${indep_num1}.batch_\${batch_num}.jlim.manual.ped.out.txt
 done # batch_num" > \
-    ${temp_direc}/13_jlim_impute/4_jlim/jlim.script.sh
+    ${temp_direc}/8_jlim_impute/4_jlim/jlim.script.sh
 
 
 while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end status comment; do
@@ -3531,16 +3531,16 @@ while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end stat
   region_start=${immchip_start["$region_num"]}
   region_end=${immchip_end["$region_num"]}
 
-  mkdir -p ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts
+  mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts
 
   # echo "$region_num $cons1 $indep_num1 $cons2 $indep_num2 $jlim_start $jlim_end $status $comment"
 
   # Perform association analyses:
   assoc_jobid=$(sbatch --parsable \
                        --job-name=region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.manual \
-                       -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.manual.out \
-                       -e ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.manual.err \
-                       ${temp_direc}/13_jlim_impute/4_jlim/jlim.assoc.script.sh \
+                       -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.manual.out \
+                       -e ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.assoc.manual.err \
+                       ${temp_direc}/8_jlim_impute/4_jlim/jlim.assoc.script.sh \
                        $region_num \
                        $cons1 \
                        $indep_num1 \
@@ -3558,9 +3558,9 @@ while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end stat
                         --array=1-$NUM_PERM_BATCHES \
                         --job-name=region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.manual \
                         --time=7-00:00:00 \
-                        -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.manual.batch_%a.out \
-                        -e ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.manual.batch_%a.err \
-                        ${temp_direc}/13_jlim_impute/4_jlim/jlim.permute.script.sh \
+                        -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.manual.batch_%a.out \
+                        -e ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.perm.manual.batch_%a.err \
+                        ${temp_direc}/8_jlim_impute/4_jlim/jlim.permute.script.sh \
                         $region_num \
                         $cons1 \
                         $indep_num1 \
@@ -3578,9 +3578,9 @@ while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end stat
          --job-name=region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.manual \
          -C haswell \
          --mem=12G \
-         -o ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.manual.out \
-         -e ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.manual.err \
-         ${temp_direc}/13_jlim_impute/4_jlim/jlim.script.sh \
+         -o ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.manual.out \
+         -e ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/scripts/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.jlim.manual.err \
+         ${temp_direc}/8_jlim_impute/4_jlim/jlim.script.sh \
          $region_num \
          $cons1 \
          $indep_num1 \
@@ -3603,8 +3603,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.manual.traits.txt | \
   while read region_num cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end status comment; do
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
       # Forward comparison, dosage:
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3613,8 +3613,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.manual.traits.txt | \
         ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.manual.txt
 
       # Reverse comparison, dosage:
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3624,8 +3624,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.manual.traits.txt | \
 
 
       # Forward comparison, pedigree:
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.ped.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.ped.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.ped.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.ped.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3634,8 +3634,8 @@ cat ${results_direc}/jlim_impute/jlim.cond.impute.manual.traits.txt | \
         ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.manual.txt
 
       # Reverse comparison, pedigree:
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.ped.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.ped.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.ped.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.ped.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3654,20 +3654,20 @@ echo "170 ibd 0 ra 0 10459969 10619302 run expand_cluster
     for batch_num in $(seq 1 $NUM_PERM_BATCHES); do
 
       # Forward comparison, dosage:
-      cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.cfg.txt | \
+      cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.cfg.txt | \
         awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
           'BEGIN{ OFS = "\t" }
            { if (NR != 1) { $8=jlim_start; $9=jlim_end; }
              print }' > \
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.cfg.txt
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.cfg.txt
 
       # Run JLIM forward comparison with dosage data:
-      run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.cfg.txt \
+      run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.cfg.txt \
                   0.8 \
-                  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.out.txt
+                  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.out.txt
 
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3677,20 +3677,20 @@ echo "170 ibd 0 ra 0 10459969 10619302 run expand_cluster
 
 
       # Reverse comparison, dosage:
-      cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.cfg.txt | \
+      cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.cfg.txt | \
         awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
           'BEGIN{ OFS = "\t" }
            { if (NR != 1) { $8=jlim_start; $9=jlim_end; }
              print }' > \
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.cfg.txt
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.cfg.txt
 
       # Run JLIM reverse comparison with dosage data:
-      run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.cfg.txt \
+      run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.cfg.txt \
                   0.8 \
-                  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.out.txt
+                  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.out.txt
 
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3700,20 +3700,20 @@ echo "170 ibd 0 ra 0 10459969 10619302 run expand_cluster
 
 
       # Forward comparison, pedigree:
-      cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.ped.cfg.txt | \
+      cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual.ped.cfg.txt | \
         awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
           'BEGIN{ OFS = "\t" }
            { if (NR != 1) { $8=jlim_start; $9=jlim_end; }
              print }' > \
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.cfg.txt
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.cfg.txt
 
       # Run JLIM forward comparison with ped data:
-      run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.cfg.txt \
+      run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.cfg.txt \
                   0.8 \
-                  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.out.txt
+                  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.out.txt
 
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons1}_${indep_num1}.${cons2}_${indep_num2}.batch_${batch_num}.jlim.manual2.ped.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3723,21 +3723,21 @@ echo "170 ibd 0 ra 0 10459969 10619302 run expand_cluster
 
 
       # Reverse comparison, pedigree:
-      cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.ped.cfg.txt | \
+      cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual.ped.cfg.txt | \
         awk -v jlim_start=$jlim_start -v jlim_end=$jlim_end \
           'BEGIN{ OFS = "\t" }
            { if (NR != 1) { $8=jlim_start; $9=jlim_end; }
              print }' > \
-        ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.cfg.txt
+        ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.cfg.txt
 
       # Run JLIM reverse comparison with ped data:
-      run_jlim.sh ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.cfg.txt \
+      run_jlim.sh ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.cfg.txt \
                   0.8 \
-                  ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.out.txt
+                  ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.out.txt
 
 
-      if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.out.txt ]; then
-        stats=$(cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.out.txt | \
+      if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.out.txt ]; then
+        stats=$(cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/region_${region_num}.${cons2}_${indep_num2}.${cons1}_${indep_num1}.batch_${batch_num}.jlim.manual2.ped.out.txt | \
                   awk 'NR>1 { print $1,$2 }')
       else
         stats="NA NA"
@@ -3814,8 +3814,8 @@ cat ${results_direc}/jlim_impute/jlim.impute.consolidated.statistics.txt | \
     fi
 
     # Obtain association data for first trait:
-    if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t1}.${region_chr}.${region_start}.${region_end}.txt ]; then
-      cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t1}.${region_chr}.${region_start}.${region_end}.txt | \
+    if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t1}.${region_chr}.${region_start}.${region_end}.txt ]; then
+      cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t1}.${region_chr}.${region_start}.${region_end}.txt | \
         awk -v region=$region_num -v ref=$refgt \
             -v tr1=$trait1 -v tr2=$trait2 \
             -v start=$jlim_start -v end=$jlim_end \
@@ -3826,8 +3826,8 @@ cat ${results_direc}/jlim_impute/jlim.impute.consolidated.statistics.txt | \
     fi
 
     # Obtain association data for second trait:
-    if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t2}.${region_chr}.${region_start}.${region_end}.txt ]; then
-      cat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t2}.${region_chr}.${region_start}.${region_end}.txt | \
+    if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t2}.${region_chr}.${region_start}.${region_end}.txt ]; then
+      cat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/${t2}.${region_chr}.${region_start}.${region_end}.txt | \
         awk -v region=$region_num -v ref=$refgt \
             -v tr1=$trait1 -v tr2=$trait2 \
             -v start=$jlim_start -v end=$jlim_end \
@@ -3866,8 +3866,8 @@ cat ${results_direc}/jlim_impute/jlim.impute.consolidated.statistics.txt | \
     fi
 
     # Get reference LD SNPs for the first trait:
-    if [ -f ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/locus.${region_chr}.${region_start}.${region_end}.txt.gz ]; then
-      zcat ${temp_direc}/13_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/locus.${region_chr}.${region_start}.${region_end}.txt.gz | \
+    if [ -f ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/locus.${region_chr}.${region_start}.${region_end}.txt.gz ]; then
+      zcat ${temp_direc}/8_jlim_impute/4_jlim/region_${region_num}/${t1}.${t2}/locus.${region_chr}.${region_start}.${region_end}.txt.gz | \
         awk -v region=$region_num -v ref=$refgt \
             -v tr1=$trait1 -v tr2=$trait2 \
             -v start=$jlim_start -v end=$jlim_end \

@@ -154,9 +154,9 @@ for jlim_method in "ped" "dosage"; do
   # Iterate over all regions and clusters:
   for region_num in $region_list; do
     for cluster_num in ${cluster_list["$region_num"]}; do
-      mkdir -p ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
-               ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets \
-               ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc
+      mkdir -p ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
+               ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets \
+               ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc
 
       # Obtain list of traits to analyze for this cluster:
       cons_to_meta=$(cat ${results_direc}/jlim_impute/jlim.impute.clusters.${jlim_method}.txt | \
@@ -166,64 +166,64 @@ for jlim_method in "ped" "dosage"; do
                        sort | uniq)
 
       # Identify duplicates to remove from this cluster:
-      > ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
+      > ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
       echo "FID IID MISS_PHENO N_MISS N_GENO F_MISS" > \
-        ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
+        ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
       for cons in $cons_to_meta; do
         # echo $cons
-        cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.fam >> \
-          ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
+        cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.fam >> \
+          ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
 
-        cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.imiss | \
+        cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.imiss | \
           awk 'NR!=1' >> \
-          ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
+          ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
       done # cons
 
       cat ${results_direc}/jlim_impute/all.cons.merged.genome | \
         awk '$10>=0.9' | \
         sort -k 1,1 | \
         join -j 1 - \
-                  <(sort -k 1,1 ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
+                  <(sort -k 1,1 ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
         sort -k 3,3 | \
         join -1 3 -2 1 - \
-                  <(sort -k 1,1 ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
+                  <(sort -k 1,1 ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
         awk 'BEGIN{ OFS="\t";
                     print "FID1","IID1","FID2","IID2","RT","EZ","Z0","Z1","Z2","PI_HAT","PHE","DST","PPC","RATIO","IBS0","IBS1","IBS2","HOMHOM","HETHET" }
              { print $2,$3,$1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19 }' > \
-        ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome
+        ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome
       ### Note that we filter by PI_HAT >= 0.9; we are only interested to remove
       ### true duplicates, not low-level (e.g. ~ 0.185) relatives that are likely
       ### to be spurious.
 
       Rscript ${src_direc}/identify.dups.and.rels.to.remove.R \
-              ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome \
-              ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss \
-              ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam \
+              ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome \
+              ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss \
+              ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam \
               TRUE \
-              ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
+              ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
               cluster_${cluster_num}
 
 
       # Remove duplicates and perform (conditional) association testing in each stratum:
       echo "region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p" > \
-        ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
+        ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
       cat ${results_direc}/jlim_impute/jlim.impute.clusters.${jlim_method}.txt | \
         awk -v region=$region_num -v cluster=$cluster_num \
           '$1==region && $2==cluster { print $4,$5 }' | \
       while read cons indep_num; do
         for stratum in ${strat_list[$cons]}; do
-          qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
-                          -s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
-                          -excl-samples ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/cluster_${cluster_num}.relatives.to.remove.txt \
+          qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                          -s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+                          -excl-samples ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/cluster_${cluster_num}.relatives.to.remove.txt \
                           -ofiletype bgen_v1.1 \
                           -bgen-permitted-input-rounding-error 0.001 \
-                          -og ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
-                          -os ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample
+                          -og ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
+                          -os ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample
 
           if [ "$indep_num" -eq 0 ]; then
             condition_snps=""
           else
-            condition_snps=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+            condition_snps=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
                                awk -v strat=$stratum -v indep=$indep_num \
                                  'BEGIN{ ORS = " " }
                                   $3!=(indep-1) && $4==strat { print $5 }')
@@ -233,22 +233,22 @@ for jlim_method in "ped" "dosage"; do
           safestrat=$(echo $stratum | sed 's/-/_/g')
 
           # Run association test:
-          snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
-                               ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample \
+          snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
+                               ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample \
                          -frequentist 1 \
                          -method expected \
                          -pheno pheno \
                          -cov_names pc1 pc2 \
                          -condition_on $condition_snps \
-                         -o ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
+                         -o ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
 
           # Compile association statistics into a single file input for meta analysis:
-          cat ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest | \
+          cat ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest | \
             awk -v region=$region_num -v cons=$cons -v strat=$stratum -v cluster=$cluster_num \
             '!/^#/ && $2 != "rsid" { print region,"cluster",cons"."strat,cluster,$2,$3,$4,$5,$6,$44,$45,$42}' >> \
-            ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
+            ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
 
-          # rm ${temp_direc}/13_jlim_impute/5_fine_map/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
+          # rm ${temp_direc}/8_jlim_impute/5_fine_map/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
         done # stratum
       done # cons indep_num
     done # cluster_num
@@ -284,7 +284,7 @@ for jlim_method in "ped" "dosage"; do
     awk 'NR!=1 { print $1,$2,$3 }' | \
     sort -k 1n,1 -k 2n,2 | uniq | \
   while read region_num cluster_num cluster_size; do
-    cat ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt | \
+    cat ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt | \
       awk -v method=$jlim_method -v cluster=$cluster_num -v clust_size=$cluster_size \
         'NR!=1 { print $1,method,cluster,clust_size,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12 }' >> \
       ${results_direc}/jlim_impute/jlim.cond.impute.clusters.assoc.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
@@ -322,13 +322,13 @@ zcat ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRE
   uniq | \
   while read region_num jlim_refgt cluster_num cons indep_num; do
 
-    mkdir -p ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap
+    mkdir -p ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap
 
     if [ "$cons" == "cluster" ]; then
-      filestem="${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/cluster"
+      filestem="${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/cluster"
       trait="cluster"
     else
-      filestem="${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${cons}_${indep_num}"
+      filestem="${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${cons}_${indep_num}"
       trait="${cons}_${indep_num}"
     fi
 
@@ -344,15 +344,15 @@ zcat ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRE
     mergelist=""
     if [ "$trait" == "cluster" ]; then
       # Merge all datasets for this cluster:
-      mergelist=$(ls -l ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/datasets/* | \
+      mergelist=$(ls -l ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/datasets/* | \
                     awk 'BEGIN { OFS=" "; ORS=" " }
                          /bgen$/ { print "-g",$9 }
                          /sample$/ { print "-s",$9 }')
     else
       # Merge all strata for this disease:
       for stratum in ${strat_list["$cons"]}; do
-        mergelist="$mergelist -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
--s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample"
+        mergelist="$mergelist -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+-s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample"
       done
     fi
 
@@ -365,23 +365,23 @@ zcat ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRE
                     -bgen-permitted-input-rounding-error 0.001 \
                     -snp-stats \
                     -snp-stats-columns allele-frequencies \
-                    -osnp ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.stats \
-                    -og ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.bgen \
-                    -os ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.sample
+                    -osnp ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.stats \
+                    -og ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.bgen \
+                    -os ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.sample
 
     # Calculate LD matrix:
-    plink --bgen ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.bgen \
-          --sample ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.sample \
+    plink --bgen ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.bgen \
+          --sample ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.sample \
           --allow-no-sex \
           --r2 square spaces \
-          --out ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}
+          --out ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}
 
     # Produce .z file:
     join -j 1 \
       <(cat ${filestem}.meta.txt | \
           awk '{ print $1":"$2,$1,$2,$3,$4,$5,$6,$7 }' | \
           sort -k 1,1) \
-      <(cat ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.stats | \
+      <(cat ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.stats | \
           awk '{ print $3":"$4,$5,$6,$12 }' | \
           sort -k 1,1) | \
       sort -k 1,1 | \
@@ -391,27 +391,27 @@ zcat ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRE
              if ($5==$10 && $6==$9) { $7 = -1*$7 }
              else if (!($5==$9 && $6==$10)) { $7 = "NA"; $8="NA" }
              print $4,$2,$3,$9,$10,$11,$7,$8 }' > \
-      ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.z
+      ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.z
 
     # Calculate sample size:
-    sample_size=$(cat ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.sample | \
+    sample_size=$(cat ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.sample | \
       tail -n +3 | wc -l)
 
     # Make master file:
     echo \
 "z;ld;snp;config;cred;log;n_samples
-${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.z;\
-${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.ld;\
-${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.snp;\
-${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.config;\
-${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.cred;\
-${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.log;\
+${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.z;\
+${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.ld;\
+${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.snp;\
+${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.config;\
+${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.cred;\
+${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.log;\
 ${sample_size}" > \
-      ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.master
+      ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.master
 
     finemap_v1.3.1_x86_64 --sss \
                           --n-causal-snps 1 \
-                          --in-files ${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.master
+                          --in-files ${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${trait}.master
   done # trait
 
 
@@ -425,9 +425,9 @@ zcat ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRE
   while read region_num jlim_refgt cluster_num cons indep_num; do
 
     if [ "$cons" == "cluster" ]; then
-      snp_file="${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/cluster.snp"
+      snp_file="${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/cluster.snp"
     else
-      snp_file="${temp_direc}/13_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${cons}_${indep_num}.snp"
+      snp_file="${temp_direc}/8_jlim_impute/5_fine_map/${jlim_refgt}/region_${region_num}/cluster_${cluster_num}/finemap/${cons}_${indep_num}.snp"
     fi
 
     if [ -f $snp_file ]; then
@@ -478,9 +478,9 @@ for jlim_method in "ped" "dosage"; do
   # Iterate over all regions and clusters:
   for region_num in $region_list; do
     for cluster_num in ${cluster_list["$region_num"]}; do
-      mkdir -p ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
-               ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets \
-               ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc
+      mkdir -p ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
+               ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets \
+               ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc
 
       # Obtain list of traits to analyze for this cluster:
       cons_to_meta=$(cat ${results_direc}/jlim.neg.impute.pairs.${jlim_method}.txt | \
@@ -490,64 +490,64 @@ for jlim_method in "ped" "dosage"; do
                        sort | uniq)
 
       # Identify duplicates to remove from this cluster:
-      > ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
+      > ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
       echo "FID IID MISS_PHENO N_MISS N_GENO F_MISS" > \
-        ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
+        ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
       for cons in $cons_to_meta; do
         # echo $cons
-        cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.fam >> \
-          ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
+        cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.fam >> \
+          ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam
 
-        cat ${temp_direc}/13_jlim_impute/3_identify_dups/3_missingness/${cons}.imiss | \
+        cat ${temp_direc}/8_jlim_impute/3_identify_dups/3_missingness/${cons}.imiss | \
           awk 'NR!=1' >> \
-          ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
+          ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss
       done # cons
 
       cat ${results_direc}/jlim_impute/all.cons.merged.genome | \
         awk '$10>=0.9' | \
         sort -k 1,1 | \
         join -j 1 - \
-                  <(sort -k 1,1 ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
+                  <(sort -k 1,1 ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
         sort -k 3,3 | \
         join -1 3 -2 1 - \
-                  <(sort -k 1,1 ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
+                  <(sort -k 1,1 ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam) | \
         awk 'BEGIN{ OFS="\t";
                     print "FID1","IID1","FID2","IID2","RT","EZ","Z0","Z1","Z2","PI_HAT","PHE","DST","PPC","RATIO","IBS0","IBS1","IBS2","HOMHOM","HETHET" }
              { print $2,$3,$1,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19 }' > \
-        ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome
+        ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome
       ### Note that we filter by PI_HAT >= 0.9; we are only interested to remove
       ### true duplicates, not low-level (e.g. ~ 0.185) relatives that are likely
       ### to be spurious.
 
       Rscript ${src_direc}/identify.dups.and.rels.to.remove.R \
-              ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome \
-              ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss \
-              ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam \
+              ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.duplicates.genome \
+              ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.imiss \
+              ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/pooled.individuals.fam \
               TRUE \
-              ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
+              ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes \
               cluster_${cluster_num}
 
 
       # Remove duplicates and perform (conditional) association testing in each stratum:
       echo "region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p" > \
-        ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
+        ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
       cat ${results_direc}/jlim_impute/jlim.neg.impute.pairs.${jlim_method}.txt | \
         awk -v region=$region_num -v cluster=$cluster_num \
           '$1==region && $2==cluster { print $4,$5 }' | \
       while read cons indep_num; do
         for stratum in ${strat_list[$cons]}; do
-          qctool_v2.1-dev -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
-                          -s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
-                          -excl-samples ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/cluster_${cluster_num}.relatives.to.remove.txt \
+          qctool_v2.1-dev -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                          -s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+                          -excl-samples ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/identify_dupes/cluster_${cluster_num}.relatives.to.remove.txt \
                           -ofiletype bgen_v1.1 \
                           -bgen-permitted-input-rounding-error 0.001 \
-                          -og ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
-                          -os ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample
+                          -og ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
+                          -os ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample
 
           if [ "$indep_num" -eq 0 ]; then
             condition_snps=""
           else
-            condition_snps=$(cat ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
+            condition_snps=$(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/region_${region_num}.${cons}.lead.snps.txt | \
                                awk -v strat=$stratum -v indep=$indep_num \
                                  'BEGIN{ ORS = " " }
                                   $3!=(indep-1) && $4==strat { print $5 }')
@@ -557,22 +557,22 @@ for jlim_method in "ped" "dosage"; do
           safestrat=$(echo $stratum | sed 's/-/_/g')
 
           # Run association test:
-          snptest_v2.5.2 -data ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
-                               ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample \
+          snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.bgen \
+                               ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/datasets/${cons}.${stratum}.region_${region_num}.imputed.nodup.sample \
                          -frequentist 1 \
                          -method expected \
                          -pheno pheno \
                          -cov_names pc1 pc2 \
                          -condition_on $condition_snps \
-                         -o ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
+                         -o ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
 
           # Compile association statistics into a single file input for meta analysis:
-          cat ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest | \
+          cat ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest | \
             awk -v region=$region_num -v cons=$cons -v strat=$stratum -v cluster=$cluster_num \
             '!/^#/ && $2 != "rsid" { print region,"cluster",cons"."strat,cluster,$2,$3,$4,$5,$6,$44,$45,$42}' >> \
-            ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
+            ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt
 
-          # rm ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
+          # rm ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.${cons}_${indep_num}.${safestrat}.snptest
         done # stratum
       done # cons indep_num
     done # cluster_num
@@ -608,7 +608,7 @@ for jlim_method in "ped" "dosage"; do
     awk 'NR!=1 { print $1,$2,$3 }' | \
     sort -k 1n,1 -k 2n,2 | uniq | \
   while read region_num cluster_num cluster_size; do
-    cat ${temp_direc}/13_jlim_impute/7_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt | \
+    cat ${temp_direc}/8_jlim_impute/6_jlim_neg_meta/${jlim_method}/region_${region_num}/cluster_${cluster_num}/assoc/region_${region_num}.cluster_${cluster_num}.assoc.results.txt | \
       awk -v method=$jlim_method -v cluster=$cluster_num -v clust_size=$cluster_size \
         'NR!=1 { print $1,method,cluster,clust_size,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12 }' >> \
       ${results_direc}/jlim_impute/jlim.cond.impute.neg.pairs.assoc.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt
@@ -638,12 +638,12 @@ Rscript ${src_direc}/jlim.impute.finemap.metafor.R \
 
 # Meta-analyze traits that are not shared with another disease:
 
-mkdir -p ${temp_direc}/13_jlim_impute/8_fine_map_unique
+mkdir -p ${temp_direc}/8_jlim_impute/7_fine_map_unique
 
 cp ${data_direc}/reference/hg19ToHg38.over.chain.gz \
-  ${temp_direc}/13_jlim_impute/8_fine_map_unique
+  ${temp_direc}/8_jlim_impute/7_fine_map_unique
 
-gzip -d ${temp_direc}/13_jlim_impute/8_fine_map_unique/hg19ToHg38.over.chain.gz
+gzip -d ${temp_direc}/8_jlim_impute/7_fine_map_unique/hg19ToHg38.over.chain.gz
 
 Rscript ${src_direc}/metafor.impute.unique.R \
         ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_0.90.txt.gz \
@@ -654,7 +654,7 @@ Rscript ${src_direc}/metafor.impute.unique.R \
         ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.all.txt.gz \
         ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.filter.txt.gz \
         ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.filter.p_0.0001.txt.gz \
-        ${temp_direc}/13_jlim_impute/8_fine_map_unique/hg19ToHg38.over.chain \
+        ${temp_direc}/8_jlim_impute/7_fine_map_unique/hg19ToHg38.over.chain \
         ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.filter.p_0.0001.liftover.txt.gz \
         ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.filter.p_0.0001.hg38.txt.gz
 ### Note that this script analyzes only traits not included in any colocalized
@@ -672,9 +672,9 @@ zcat ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.
   uniq | \
   while read region_num cons indep_num; do
 
-    mkdir -p ${temp_direc}/13_jlim_impute/8_fine_map_unique/region_${region_num}
+    mkdir -p ${temp_direc}/8_jlim_impute/7_fine_map_unique/region_${region_num}
 
-    filestem="${temp_direc}/13_jlim_impute/8_fine_map_unique/region_${region_num}/region_${region_num}.${cons}_${indep_num}"
+    filestem="${temp_direc}/8_jlim_impute/7_fine_map_unique/region_${region_num}/region_${region_num}.${cons}_${indep_num}"
 
     # Extract association statistics for this trait:
     zcat ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.filter.p_0.0001.txt.gz | \
@@ -686,8 +686,8 @@ zcat ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.
     # Merge all strata for this disease:
     mergelist=""
     for stratum in ${strat_list["$cons"]}; do
-      mergelist="$mergelist -g ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
--s ${temp_direc}/13_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample"
+      mergelist="$mergelist -g ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+-s ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.sample"
     done
 
     # Produce merged genotype file and calculate allele frequencies:
@@ -759,7 +759,7 @@ zcat ${results_direc}/jlim_impute/meta.cond.impute.unique.P_${COND_P_THRESHOLD}.
   uniq | \
   while read region_num cons indep_num; do
 
-    filestem="${temp_direc}/13_jlim_impute/8_fine_map_unique/region_${region_num}/region_${region_num}.${cons}_${indep_num}"
+    filestem="${temp_direc}/8_jlim_impute/7_fine_map_unique/region_${region_num}/region_${region_num}.${cons}_${indep_num}"
 
     if [ -f "${filestem}.snp" ]; then
       cat ${filestem}.snp | \
