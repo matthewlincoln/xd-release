@@ -533,7 +533,7 @@ for cons in $strat_cons_list; do
   elif [ $cons == "ms" ]; then
     # Remove the Unknown stratum:
     stratum_list=`echo $stratum_list | sed 's/Unknown//'`
-  
+
   # elif [ $cons == "sle_g" ]; then
   #   # Remove the AA and Others strata:
   #   stratum_list=`echo $stratum_list | sed 's/AA//'`
@@ -542,7 +542,7 @@ for cons in $strat_cons_list; do
   else
     stratum_list=`echo $stratum_list | sed 's/\n//'`
   fi
-  
+
   stratum_list=`echo $stratum_list | sed 's/  / /g'`
 
   strat_list[$cons]=$stratum_list
@@ -703,110 +703,13 @@ sbatch ${src_direc}/immchip.assoc.sh \
 
 
 ################################################################################
-###################    Section 8: Strand flips and merging    ##################
-################################################################################
-
-# As we will impute genotypes from 1,000 Genomes haplotypes, we must ensure that
-# all datasets encode strand in a manner consistent with these haplotypes.
-
-sbatch ${src_direc}/immchip.flip.strands.merge.files.sh \
-       $temp_direc \
-       $log_direc \
-       $src_direc \
-       $data_direc/1000GP_Phase3 \
-       $results_direc
-
-
-################################################################################
-##############    Section 9: Identify duplicates and relatives    ##############
-################################################################################
-
-# In this section, we identify duplicates and relatives to remove. Several of
-# the studies share a large number of controls, and it is there may also be
-# relatives in the different consortia. We 
-#   We need to do IBD calculations on the entire dataset together to weed these out. The merged file is vary large, so the
-#   number of possible pairs is huge. We address this by breaking the work into 100 parallel jobs and recording only pairs
-#   with pi_hat >= 0.185.
-
-### This section generates a large number of scripts and submits them to slurm
-
-# mkdir -p ${temp_direc}/6_identify_related_subjects/1_ld_pruned \
-#          ${temp_direc}/6_identify_related_subjects/2_missingness \
-#          ${temp_direc}/6_identify_related_subjects/3_parallel_outputs/scripts \
-#          ${temp_direc}/6_identify_related_subjects/3_parallel_outputs/outputs \
-#          ${temp_direc}/6_identify_related_subjects/4_merged_output
-
-# Limit IBD calculation to Immunochip SNPs that survived LD pruning in our 1KG data:
-# plink --bfile ${results_direc}/datasets/merged_preimpute/merged.preimpute.ced.ibd.ms.sleg.sleo.t1d.t1d_asp.ra \
-#       --extract ${data_direc}/1kg_ld_pruned/1kg.snp.list.txt \
-#       --allow-no-sex \
-#       --make-bed \
-#       --out ${temp_direc}/6_identify_related_subjects/1_ld_pruned/all.cohorts.1kg.pruned
-
-# Calculate missingness for merged cohort (including all SNPS):
-# plink --bfile ${results_direc}/datasets/merged_preimpute/merged.preimpute.ced.ibd.ms.sleg.sleo.t1d.t1d_asp.ra \
-#       --missing \
-#       --allow-no-sex \
-#       --out ${temp_direc}/6_identify_related_subjects/2_missingness/all.cohorts
-
-# Dispatch jobs to calculate IBD between pairs of individuals
-# jobid=""
-# ibd_joblist=""
-# for i in {1..100}; do
-#   jobid=$(echo \
-#     '#!'"/bin/bash
-
-#     PATH=$PATH:${shape_direc}
-
-#     # Calculate IBD between pairs of individuals:
-#     plink --bfile ${temp_direc}/6_identify_related_subjects/1_ld_pruned/all.cohorts.1kg.pruned \\
-#           --genome full \\
-#           --min 0.185 \\
-#           --parallel ${i} 100 \\
-#           --out ${temp_direc}/6_identify_related_subjects/3_parallel_outputs/outputs/all.cohorts.ibd.${i}" | \
-#     sbatch -J all.cohorts.ibd.${i} \
-#            --partition=general \
-#            -o ${temp_direc}/6_identify_related_subjects/3_parallel_outputs/scripts/all.cohorts.ibd.${i}.out \
-#            -e ${temp_direc}/6_identify_related_subjects/3_parallel_outputs/scripts/all.cohorts.ibd.${i}.err \
-#            --parsable)
-#   ibd_joblist="${ibd_joblist}:${jobid}"
-# done
-
-# We must wait for Slurm scripts above to finish before proceeding
-# exit
-
-# Merge outputs into a single IBD file:
-# > ${temp_direc}/6_identify_related_subjects/4_merged_output/all.cohorts.genome
-# for i in {1..100}; do
-#   cat ${temp_direc}/6_identify_related_subjects/3_parallel_outputs/outputs/all.cohorts.ibd.${i}.genome.${i} >> \
-#     ${temp_direc}/6_identify_related_subjects/4_merged_output/all.cohorts.genome
-# done
-
-# cp ${temp_direc}/6_identify_related_subjects/4_merged_output/all.cohorts.genome \
-#   ${results_direc}/datasets/merged_preimpute
-
-# Identify duplicates and relatives in the merged dataset:
-# mkdir -p ${log_direc}/merged
-
-# Rscript ${src_direc}/identify.dups.and.rels.to.remove.R \
-#         ${temp_direc}/6_identify_related_subjects/4_merged_output/all.cohorts.genome \
-#         ${temp_direc}/6_identify_related_subjects/2_missingness/all.cohorts.imiss \
-#         ${results_direc}/datasets/merged_preimpute/merged.preimpute.ced.ibd.ms.sleg.sleo.t1d.t1d_asp.ra.fam \
-#         ${log_direc}/merged \
-#         merged
-
-# Account for SNP and sample fate:
-Rscript ${src_direc}/account.snp.sample.fate.R
-
-
-################################################################################
-####################    Section 9: Phasing and Imputation   ####################
+####################    Section 8: Phasing and Imputation   ####################
 ################################################################################
 
 # In this section, we pre-phase haplotypes and impute missing genotypes within
 # the ImmunoChip loci.
 
-sbatch src/immchip.impute.sh \
+sbatch ${src_direc}/immchip.impute.sh \
        $temp_direc \
        $data_direc \
        $src_direc \
@@ -815,23 +718,14 @@ sbatch src/immchip.impute.sh \
        $results_direc \
        $project_direc
 
+sbatch ${src_direc}/immchip.postimputation.qc.sh
 
-################################################################################
-##################    Section 10: Pre- and Post-imputation QC  #################
-################################################################################
-
-# As we have concerns about the quality of the OMRF dataset, we need to
-# determine whether to remove this (or another) dataset from our final analysis.
-
-# We compare the rates of missingness across datasets, as a function of MAF and
-# case status, both before and after imputation. We also produce association
-# statistics and compare these to published results.
-
-sbatch src/immchip.postimputation.qc.sh
+# Account for SNP and sample fate:
+Rscript ${src_direc}/account.snp.sample.fate.R
 
 
 ################################################################################
-#######################    Section 11: Compile QC data    ######################
+#######################    Section 9: Compile QC data    #######################
 ################################################################################
 
 # Collect intermediate data for documentation purposes:
