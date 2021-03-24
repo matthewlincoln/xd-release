@@ -7,7 +7,7 @@
 
 
 ## Introduction
-This repository contains code used for quality control, association, joint likelihood mapping and fine-mapping in [Placeholder text](https://localhost).
+This repository contains code used for quality control, association, joint likelihood mapping and fine-mapping in [Joint analysis reveals shared autoimmune disease associations and identifies common mechanisms](https://localhost).
 
 
 ## Disclaimer
