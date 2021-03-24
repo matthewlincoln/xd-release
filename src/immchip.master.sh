@@ -7,24 +7,7 @@
 
 
 ################################################################################
-############################    Table of contents    ###########################
-################################################################################
-
-### Section 1: Notes
-### Section 2: Setup
-### Section 3: Manifest tidying
-### Section 4: Liftover to hg19
-### Section 5: Per-disease QC
-### Section 6: Recoding individuals
-### Section 7: Strand flips and merging
-### Section 8: Liftover to GRCh38
-### Section 9: Renaming related subjects
-### Section 10: Phasing
-### Section 11: Imputation
-
-
-################################################################################
-############################    Section 1: Notes    ############################
+############################    Section 0: Notes    ############################
 ################################################################################
 
 # This is the master script for the ImmunoChip cross-disease fine-mapping
@@ -44,7 +27,7 @@ exit
 
 
 ################################################################################
-############################    Section 2: Setup    ############################
+############################    Section 1: Setup    ############################
 ################################################################################
 
 # This is a register of where important files are. These variables can be
@@ -69,7 +52,6 @@ project_direc=/ysm-gpfs/home/${USER}/project/immchip
 bin_direc=/ysm-gpfs/home/${USER}/bin
 ### The binary directory must contain liftover, PLINK, SHAPEIT, IMPUTE2
 
-
 # Construct any missing directories:
 for dir in $bin_direc $src_direc $log_direc $results_direc \
   ${data_direc}/immchip ${data_direc}/1kg_ld_pruned ${data_direc}/1kg_phased \
@@ -82,21 +64,10 @@ done
 
 PATH=${PATH}:${bin_direc}
 
-
 # Get liftOver utility from UCSC:
 if [ ! -f "${bin_direc}/liftOver" ]; then
   wget http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/liftOver \
     -P ${bin_direc}
-fi
-
-# Get GenotypeHarmonizer utility:
-if [ ! -f "${bin_direc}/GenotypeHarmonizer/GenotypeHarmonizer.jar" ]; then
-  mkdir -p ${bin_direc}/GenotypeHarmonizer
-
-  wget http://www.molgenis.org/downloads/GenotypeHarmonizer/GenotypeHarmonizer-1.4.20-dist.tar.gz \
-    -P ${bin_direc}
-  tar -xzvf ${bin_direc}/GenotypeHarmonizer-1.4.20-dist.tar.gz \
-    -C ${bin_direc}/GenotypeHarmonizer --strip-components 1
 fi
 
 # Liftover chain files are stored in data/liftover; these are obtained from
@@ -189,7 +160,7 @@ fi
 if [ ! -f "${data_direc}/reference/20130606_sample_info_edited.csv" ]; then
   echo "Data file ${data_direc}/reference/20130606_sample_info_edited.csv does not exist."
   missing=1
-fi  
+fi
 
 if [ $missing = 1 ]; then
     echo "Could not find all required components."
@@ -204,7 +175,7 @@ mkdir -p "$log_direc"/slurm
 
 
 ################################################################################
-#######################    Section 3: Manifest tidying    ######################
+#######################    Section 2: Manifest tidying    ######################
 ################################################################################
 
 # The manifests we received from collaborators had multiple types of conflicts.
@@ -332,7 +303,7 @@ done
 
 
 ################################################################################
-#######################    Section 4: Liftover to hg19    ######################
+#######################    Section 3: Liftover to hg19    ######################
 ################################################################################
 
 # The data we received from collaborators was mapped to the hg18 genome
@@ -426,7 +397,7 @@ done
 
 
 ################################################################################
-########################    Section 5: Per-disease QC    #######################
+########################    Section 4: Per-disease QC    #######################
 ################################################################################
 
 # In this section, we perform quality control on each datasets individually.
@@ -623,7 +594,7 @@ done
 
 
 ################################################################################
-#####################    Section 6: Recoding individuals    ####################
+#####################    Section 5: Recoding individuals    ####################
 ################################################################################
 
 # In this section, we create a uniform sample ID nomenclature across all
@@ -685,7 +656,7 @@ done
 
 
 ################################################################################
-#######################    Section 7: Association test    ######################
+#######################    Section 6: Association test    ######################
 ################################################################################
 
 # Here, we run a simple meta-analysis of the genotype data using PLINK to see
@@ -703,7 +674,7 @@ sbatch ${src_direc}/immchip.assoc.sh \
 
 
 ################################################################################
-####################    Section 8: Phasing and Imputation   ####################
+####################    Section 7: Phasing and Imputation   ####################
 ################################################################################
 
 # In this section, we pre-phase haplotypes and impute missing genotypes within
@@ -725,7 +696,7 @@ Rscript ${src_direc}/account.snp.sample.fate.R
 
 
 ################################################################################
-#######################    Section 9: Compile QC data    #######################
+#######################    Section 8: Compile QC data    #######################
 ################################################################################
 
 # Collect intermediate data for documentation purposes:
@@ -1081,7 +1052,7 @@ cp ${temp_direc}/3_consortium_qc/*/3_pca/*/*.european.samples.txt \
 
 
 ################################################################################
-##############    Section 12: Identify shared traits with JLIM    ##############
+##############    Section 9: Identify shared traits with JLIM    ##############
 ################################################################################
 
 # In this section, we use JLIM to identify susceptibility traits that are shared
@@ -1100,7 +1071,7 @@ sbatch ${src_direc}/immchip.jlim.impute.sh \
 
 
 ################################################################################
-########    Section 13: Cross-disease meta analysis and fine-mapping    ########
+########    Section 10: Cross-disease meta analysis and fine-mapping    ########
 ################################################################################
 
 # In this section, we use FINEMAP to identify credible intervals for each trait,
