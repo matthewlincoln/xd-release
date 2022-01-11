@@ -13,7 +13,7 @@
 
 # This script performs quality control on the RA consortium data. It is based
 # heavily on the QC scripts for the first 6 cohorts. It is called by
-# immchip.master.sh and consists of the following sections:
+# immchip.main.sh and consists of the following sections:
 
 #  Section 1. Notes
 #  Section 2. Setup.
@@ -42,7 +42,7 @@
 ############################    Section 2: Setup    ############################
 ################################################################################
 
-# Obtain parameters passed from immchip.master.file.sh through the command line:
+# Obtain parameters passed from immchip.main.file.sh through the command line:
 
 data_direc=$1
 raw_data_dir=${data_direc}/immchip
@@ -124,7 +124,7 @@ cp ${ra_direc}/0_manifest_resolution/2_consistent_manifest/ra.snp.newpos.txt $lo
 #######################    Section 4: Liftover to hg19    ######################
 ################################################################################
 
-# This code is adapted from immchip.master.sh
+# This code is adapted from immchip.main.sh
 
 mkdir -p ${ra_direc}/0_manifest_resolution/3_liftover_hg19/1_ped_map \
          ${ra_direc}/0_manifest_resolution/3_liftover_hg19/2_liftover_out

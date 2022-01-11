@@ -1,16 +1,16 @@
 #!/bin/bash
-#SBATCH -J master
+#SBATCH -J main
 #SBATCH --mem-per-cpu=48000
 #SBATCH -C haswell
-#SBATCH -o immchip.master.file.out
-#SBATCH -e immchip.master.file.err
+#SBATCH -o immchip.main.file.out
+#SBATCH -e immchip.main.file.err
 
 
 ################################################################################
 ############################    Section 0: Notes    ############################
 ################################################################################
 
-# This is the master script for the ImmunoChip cross-disease fine-mapping
+# This is the main script for the ImmunoChip cross-disease fine-mapping
 # project. It was developed initially by Noah Connally (noahconnally@gmail.com)
 # and developed further by Matthew Lincoln (matthew.lincoln@gmail.com) in the
 # Cotsapas Lab at Yale. The code has been configured to run on the Yale HPC

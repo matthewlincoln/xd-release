@@ -53,7 +53,7 @@ In addition, the following reference data is required:
 
 
 ## Running the Pipeline
-The pipeline is invoked from src/immchip.master.sh, which calls relevant dependencies to execute the main analysis steps in order. Detailed descriptions are provided at the top of each script, and also as inline comments. The pipeline is not intended to be run as standalone, unsupervised code; user input is required at several stages.
+The pipeline is invoked from src/immchip.main.sh, which calls relevant dependencies to execute the main analysis steps in order. Detailed descriptions are provided at the top of each script, and also as inline comments. The pipeline is not intended to be run as standalone, unsupervised code; user input is required at several stages.
 
 
 ## Files Included in This Distribution
@@ -61,7 +61,7 @@ The pipeline is invoked from src/immchip.master.sh, which calls relevant depende
 | ---- | --- |
 | README.md | This file |
 | src/  | Contains all scripts required in by the pipeline |
-| src/immchip.master.sh | The main analysis script |
+| src/immchip.main.sh | The main analysis script |
 | src/resolve.manifests.1.R | Manifest resolution |
 | src/resolve.manifests.2.R | Manifest resolution |
 | src/snp.similarity.sh | Manifest resolution |

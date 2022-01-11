@@ -13,7 +13,7 @@
 
 # This script performs quality control on the T1D ASP data. It is based heavily
 # on immchip.t1d.qc.sh, the QC script for the T1D GRID cohort. It is called by
-# immchip.master.sh and consists of the following sections:
+# immchip.main.sh and consists of the following sections:
 
 #  Section 1. Notes
 #  Section 2. Setup
@@ -38,7 +38,7 @@
 ############################    Section 2: Setup    ############################
 ################################################################################
 
-# Obtain parameters passed from immchip.master.file.sh through the command line:
+# Obtain parameters passed from immchip.main.file.sh through the command line:
 
 data_direc=$1
 temp_direc=$2

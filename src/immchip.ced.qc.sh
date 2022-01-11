@@ -12,7 +12,7 @@
 ################################################################################
 
 # This script performs quality control on the CeD consortium data. It is called
-# by immchip.master.sh and consists of the following sections:
+# by immchip.main.sh and consists of the following sections:
 
 #  Section 1. Notes
 #  Section 2. Setup
@@ -38,7 +38,7 @@
 ############################    Section 2: Setup    ############################
 ################################################################################
 
-# Obtain parameters passed from immchip.master.file.sh through the command line:
+# Obtain parameters passed from immchip.main.file.sh through the command line:
 data_direc=$1
 temp_direc=$2
 ced_direc=${temp_direc}/3_consortium_qc/ced
