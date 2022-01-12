@@ -127,7 +127,7 @@ done
 # If any files are missing, re-download the entire dataset:
 if [ $missing_kg = 1 ]; then
   wget https://mathgen.stats.ox.ac.uk/impute/1000GP_Phase3.tgz -P ${data_direc}/1kg_phased
-  tar -xzvf ${data_direc}/1kg_phased/1000GP_Phase3.tgz -C ${data_direc}/1kg_phased
+  tar -xzvf ${data_direc}/1kg_phased/1000GP_Phase3.tgz -C ${data_direc}/1kg_phased --strip-components=1
   rm ${data_direc}/1kg_phased/1000GP_Phase3.tgz
 fi
 
@@ -171,7 +171,7 @@ fi
 mkdir -p ${log_direc}/{ced,ibd,ms,sle_g,sle_o,t1d,t1d_asp}
 
 # Make directory for slurm log files:
-mkdir -p "$log_direc"/slurm
+mkdir -p ${log_direc}/slurm
 
 
 ################################################################################
@@ -218,7 +218,7 @@ mkdir -p ${temp_direc}/1_manifest_fix/1_identify_problematic_snps \
          ${temp_direc}/1_manifest_fix/7_consistent_snp_naming \
          ${log_direc}/manifest
 
-module load R/3.3.2-foss-2016a
+module load R/4.0.5-foss-2020b
 
 # Run the first step of the manifest tidying process
 # This step deals SNPs that map to multiple positions across cohorts and
@@ -250,6 +250,7 @@ bash ${src_direc}/snp.similarity.sh \
      ${temp_direc}/1_manifest_fix/1_identify_problematic_snps \
      ${temp_direc}/1_manifest_fix/2_ped_map \
      ${temp_direc}/1_manifest_fix/3_dup_snp_similarity
+### NOTE: this script assumes it is launched from the $base directory
 
 # We must wait for the slurm scripts launched in the previous step to finish
 exit
