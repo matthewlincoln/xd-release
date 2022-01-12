@@ -481,24 +481,20 @@ plink --bfile ${t1dasp_direc}/6_miss_01/2_sub/t1d_asp.mind.01 \
 
 # Parallel jobs to calculate pi_hat for all pairs of samples; report only
 # pi_hat >= 0.185:
-joblist=""
-for i in {1..20}; do
-  printf \
-    "#!/bin/bash
-#SBATCH -J t1d_asp.ibd.${i}
-#SBATCH -o ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.${i}.out
-#SBATCH -e ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.${i}.err
+printf "#!/bin/bash
+#SBATCH -J t1d_asp.ibd
+#SBATCH --array=1-20
+#SBATCH -o ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.%%a.out
+#SBATCH -e ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.%%a.err
 
 plink --bfile ${t1dasp_direc}/7_ibd/1_ld_pruned/t1d_asp.ld.pruned \\
     --genome full \\
     --min 0.185 \\
-    --parallel ${i} 20 \\
-    --out ${t1dasp_direc}/7_ibd/2_parallel_outputs/outputs/t1d_asp.ibd.${i}" > \
-    ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.${i}.sh
+    --parallel \$SLURM_ARRAY_TASK_ID 20 \\
+    --out ${t1dasp_direc}/7_ibd/2_parallel_outputs/outputs/t1d_asp.ibd.\${SLURM_ARRAY_TASK_ID}" > \
+    ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.sh
 
-  jobid=$(sbatch --parsable ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.${i}.sh)
-  joblist="${joblist}:${jobid}"
-done
+jobid=$(sbatch --parsable ${t1dasp_direc}/7_ibd/2_parallel_outputs/scripts/t1d_asp.run.genome.sh)
 
 # After dispatching parallel IBD calculations to slurm, launch a new script to
 # merge results and perform H-W testing. This script is launched with slurm
@@ -581,6 +577,6 @@ plink --bfile ${t1dasp_direc}/7_ibd/5_no_dups/t1d_asp.no.dups \\
 sbatch -J t1d_asp.merge.hw \
        --mem-per-cpu=48000 \
        -C haswell \
-       --dependency=afterok$joblist \
+       --dependency=afterok:${jobid} \
        -o ${t1dasp_direc}/7_ibd/immchip.t1d_asp.merge.hw.out \
        -e ${t1dasp_direc}/7_ibd/immchip.t1d_asp.merge.hw.err

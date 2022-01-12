@@ -503,24 +503,20 @@ for stratum in $stratum_list; do
 
   # Parallel jobs to calculate pi_hat for all pairs of samples; report only
   # pi_hat >= 0.185:
-  joblist=""
-  for i in {1..20}; do
-    printf \
-      "#!/bin/bash
-#SBATCH -J ms.${stratum}.ibd.${i}
-#SBATCH -o ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.${i}.out
-#SBATCH -e ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.${i}.err
+  printf "#!/bin/bash
+#SBATCH -J ms.${stratum}.ibd
+#SBATCH --array=1-20
+#SBATCH -o ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.%%a.out
+#SBATCH -e ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.%%a.err
 
 plink --bfile ${ms_direc}/${stratum}/8_ibd/1_ld_pruned/ms.${stratum}.ld.pruned \\
       --genome full \\
       --min 0.185 \\
-      --parallel ${i} 20 \\
-      --out ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/outputs/ms.${stratum}.ibd.${i}" > \
-      ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.${i}.sh
+      --parallel \$SLURM_ARRAY_TASK_ID 20 \\
+      --out ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/outputs/ms.${stratum}.ibd.\${SLURM_ARRAY_TASK_ID}" > \
+      ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.sh
 
-    jobid=$(sbatch --parsable ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.${i}.sh)
-    joblist="${joblist}:${jobid}"
-  done
+  jobid=$(sbatch --parsable ${ms_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ms.${stratum}.run.genome.sh)
 
   # After dispatching parallel IBD calculations to slurm, launch a new script to
   # merge results and perform H-W testing. This script is launched with slurm
@@ -603,7 +599,7 @@ plink --bfile ${ms_direc}/${stratum}/8_ibd/1_ld_pruned/ms.${stratum}.ld.pruned \
   sbatch -J ms.${stratum}.merge.hw \
          --mem-per-cpu=48000 \
          -C haswell \
-         --dependency=afterok$joblist \
+         --dependency=afterok:${jobid} \
          -o ${ms_direc}/${stratum}/8_ibd/immchip.ms.merge.hw.out \
          -e ${ms_direc}/${stratum}/8_ibd/immchip.ms.merge.hw.err
 done

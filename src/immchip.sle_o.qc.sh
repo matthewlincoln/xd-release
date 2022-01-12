@@ -497,24 +497,20 @@ plink --bfile ${sleo_direc}/6_miss_01/2_sub/sle_o.mind.01 \
 
 # Parallel jobs to calculate pi_hat for all pairs of samples; report only
 # pi_hat >= 0.185:
-joblist=""
-for i in {1..20}; do
-  printf \
-    "#!/bin/bash
-#SBATCH -J sle_o.ibd.${i}
-#SBATCH -o ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.${i}.out
-#SBATCH -e ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.${i}.err
+printf "#!/bin/bash
+#SBATCH -J sle_o.ibd
+#SBATCH --array=1-20
+#SBATCH -o ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.%%a.out
+#SBATCH -e ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.%%a.err
 
 plink --bfile ${sleo_direc}/7_ibd/1_ld_pruned/sle_o.ld.pruned \\
     --genome full \\
     --min 0.185 \\
-    --parallel ${i} 20 \\
-    --out ${sleo_direc}/7_ibd/2_parallel_outputs/outputs/sle_o.ibd.${i}" > \
-    ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.${i}.sh
+    --parallel \$SLURM_ARRAY_TASK_ID 20 \\
+    --out ${sleo_direc}/7_ibd/2_parallel_outputs/outputs/sle_o.ibd.\${SLURM_ARRAY_TASK_ID}" > \
+    ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.sh
 
-  jobid=$(sbatch --parsable ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.${i}.sh)
-  joblist="${joblist}:${jobid}"
-done
+jobid=$(sbatch --parsable ${sleo_direc}/7_ibd/2_parallel_outputs/scripts/sle_o.run.genome.sh)
 
 # After dispatching parallel IBD calculations to slurm, launch a new script to
 # merge results and perform H-W testing. This script is launched with slurm
@@ -597,6 +593,6 @@ plink --bfile ${sleo_direc}/7_ibd/5_no_dups/sle_o.no.dups \\
 sbatch -J sle_o.merge.hw \
        --mem-per-cpu=48000 \
        -C haswell \
-       --dependency=afterok$joblist \
+       --dependency=afterok:${jobid} \
        -o ${sleo_direc}/7_ibd/immchip.sle_o.merge.hw.out \
        -e ${sleo_direc}/7_ibd/immchip.sle_o.merge.hw.err

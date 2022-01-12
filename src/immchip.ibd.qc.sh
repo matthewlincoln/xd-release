@@ -720,24 +720,20 @@ for stratum in $stratum_list; do
 
   # Parallel jobs to calculate pi_hat for all pairs of samples; report only
   # pi_hat >= 0.185:
-  joblist=""
-  for i in {1..20}; do
-    printf \
-      "#!/bin/bash
-#SBATCH -J ibd.${stratum}.ibd.${i}
-#SBATCH -o ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.${i}.out
-#SBATCH -e ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.${i}.err
+  printf "#!/bin/bash
+#SBATCH -J ibd.${stratum}.ibd
+#SBATCH --array=1-20
+#SBATCH -o ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.%%a.out
+#SBATCH -e ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.%%a.err
 
 plink --bfile ${ibd_direc}/${stratum}/8_ibd/1_ld_pruned/ibd.${stratum}.ld.pruned \\
       --genome full \\
       --min 0.185 \\
-      --parallel ${i} 20 \\
-      --out ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/outputs/ibd.${stratum}.ibd.${i}" > \
-      ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.${i}.sh
+      --parallel \$SLURM_ARRAY_TASK_ID 20 \\
+      --out ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/outputs/ibd.${stratum}.ibd.\${SLURM_ARRAY_TASK_ID}" > \
+      ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.sh
 
-    jobid=$(sbatch --parsable ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.${i}.sh)
-    joblist="${joblist}:${jobid}"
-  done
+  jobid=$(sbatch --parsable ${ibd_direc}/${stratum}/8_ibd/2_parallel_outputs/scripts/ibd.${stratum}.run.genome.sh)
 
   # After dispatching parallel IBD calculations to slurm, launch a new script to
   # merge results and perform H-W testing. This script is launched with slurm
@@ -820,7 +816,7 @@ plink --bfile ${ibd_direc}/${stratum}/8_ibd/1_ld_pruned/ibd.${stratum}.ld.pruned
   sbatch -J ibd.${stratum}.merge.hw \
          --mem-per-cpu=48000 \
          -C haswell \
-         --dependency=afterok$joblist \
+         --dependency=afterok:${jobid} \
          -o ${ibd_direc}/${stratum}/8_ibd/immchip.ibd.merge.hw.out \
          -e ${ibd_direc}/${stratum}/8_ibd/immchip.ibd.merge.hw.err
 done
