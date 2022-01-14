@@ -31,7 +31,7 @@ MHC_CHR=6
 MHC_START_BP=28000000
 MHC_END_BP=34000000
 
-module load R/3.3.2-foss-2016a
+module load R/4.0.5-foss-2020b
 
 
 ################################################################################
@@ -125,7 +125,6 @@ strat_list["t1d"]="GRID ASP"
 
 
 # Merge strata and calculate identity by descent:
-joblist=""
 for cons in $cons_list; do
   mkdir -p ${log_direc}/assoc_test/${cons} \
            ${temp_direc}/5_assoc_test/1_remove_relatives/1_merge/${cons} \
@@ -197,22 +196,20 @@ for cons in $cons_list; do
         --out ${temp_direc}/5_assoc_test/1_remove_relatives/3_missingness/${cons}/${cons}.ibd.missing
 
   # Calculate pi_hat values for each pair of individuals (report values >= 0.185):
-  for i in {1..20}; do
-    printf '#!'"/bin/bash
-#SBATCH -J ${cons}.ibd.${i}
-#SBATCH -o ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.genome.${i}.out
-#SBATCH -e ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.genome.${i}.err
+  printf '#!'"/bin/bash
+#SBATCH -J ${cons}.ibd
+#SBATCH --array=1-20
+#SBATCH -o ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.genome.%%a.out
+#SBATCH -e ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.genome.%%a.err
 
 plink --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/2_known_phenos/${cons}/${cons}.known.phenos \\
       --genome full \\
       --min 0.185 \\
-      --parallel ${i} 20 \\
+      --parallel \$SLURM_ARRAY_TASK_ID 20 \\
       --out ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/outputs/${cons}.merged.ibd" > \
-      ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.merged.ibd.${i}.sh
+      ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.merged.ibd.sh
 
-    jobid=$(sbatch --parsable ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.merged.ibd.${i}.sh)
-    joblist="${joblist}:${jobid}"
-  done
+  sbatch --parsable ${temp_direc}/5_assoc_test/1_remove_relatives/4_ibd/${cons}/scripts/${cons}.merged.ibd.sh
 done
 
 
@@ -518,7 +515,7 @@ for cons in $strat_cons_list; do
     # Use PLINK2 to get A1/A2 fields:
     plink2 --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels \
            --allow-no-sex \
-           --glm cols=chrom,pos,ref,alt,a0,test,nobs,beta,se,ci,p \
+           --glm no-firth cols=chrom,pos,ref,alt,test,nobs,beta,se,ci,p \
            --covar ${temp_direc}/5_assoc_test/3_assoc/${cons}/${stratum}/${cons}.${stratum}.${num_pcs_incl}PC.txt \
            --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.${num_pcs_incl}PC.beta
 
@@ -537,8 +534,8 @@ for cons in $strat_cons_list; do
   plink --meta-analysis $strat_list \
         + qt report-all \
         --meta-analysis-snp-field ID \
-        --meta-analysis-a1-field A0 \
-        --meta-analysis-a2-field A1 \
+        --meta-analysis-a1-field REF \
+        --meta-analysis-a2-field ALT \
         --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${num_pcs_incl}PC
 
   cp ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${num_pcs_incl}PC.meta \
@@ -554,61 +551,61 @@ for cons in $strat_cons_list; do
 
     plink2 --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels \
            --allow-no-sex \
-           --glm cols=chrom,pos,ref,alt,a0,test,nobs,beta,se,ci,p \
+           --glm no-firth allow-no-covars cols=chrom,pos,ref,alt,test,nobs,beta,se,ci,p \
            --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.0PC.beta
 
     cat ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.0PC.beta.PHENO1.glm.logistic | \
       awk -v cons=$cons -v strat=$stratum -v pc=0 \
-        'NR != 1 && $8=="ADD" { print cons,strat,pc,$3,$1,$2,$6,$7,$9,$10,$11,$12 }' >> \
+        'NR != 1 && $7=="ADD" { print cons,strat,pc,$3,$1,$2,$4,$5,$8,$9,$10,$11 }' >> \
       ${results_direc}/assoc_test/all.strata.assoc.pcs.txt
 
     plink2 --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels \
            --allow-no-sex \
-           --glm cols=chrom,pos,ref,alt,a0,test,nobs,beta,se,ci,p \
+           --glm no-firth cols=chrom,pos,ref,alt,test,nobs,beta,se,ci,p \
            --covar ${temp_direc}/5_assoc_test/3_assoc/${cons}/${stratum}/${cons}.${stratum}.1PC.txt \
            --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.1PC.beta
 
     cat ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.1PC.beta.PHENO1.glm.logistic | \
       awk -v cons=$cons -v strat=$stratum -v pc=1 \
-        'NR != 1 && $8=="ADD" { print cons,strat,pc,$3,$1,$2,$6,$7,$9,$10,$11,$12 }' >> \
+        'NR != 1 && $7=="ADD" { print cons,strat,pc,$3,$1,$2,$4,$5,$8,$9,$10,$11 }' >> \
       ${results_direc}/assoc_test/all.strata.assoc.pcs.txt
 
     cat ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.2PC.beta.PHENO1.glm.logistic | \
       awk -v cons=$cons -v strat=$stratum -v pc=2 \
-        'NR != 1 && $8=="ADD" { print cons,strat,pc,$3,$1,$2,$6,$7,$9,$10,$11,$12 }' >> \
+        'NR != 1 && $7=="ADD" { print cons,strat,pc,$3,$1,$2,$4,$5,$8,$9,$10,$11 }' >> \
       ${results_direc}/assoc_test/all.strata.assoc.pcs.txt
 
     plink2 --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels \
            --allow-no-sex \
-           --glm cols=chrom,pos,ref,alt,a0,test,nobs,beta,se,ci,p \
+           --glm no-firth cols=chrom,pos,ref,alt,test,nobs,beta,se,ci,p \
            --covar ${temp_direc}/5_assoc_test/3_assoc/${cons}/${stratum}/${cons}.${stratum}.3PC.txt \
            --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.3PC.beta
 
     cat ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.3PC.beta.PHENO1.glm.logistic | \
       awk -v cons=$cons -v strat=$stratum -v pc=3 \
-        'NR != 1 && $8=="ADD" { print cons,strat,pc,$3,$1,$2,$6,$7,$9,$10,$11,$12 }' >> \
+        'NR != 1 && $7=="ADD" { print cons,strat,pc,$3,$1,$2,$4,$5,$8,$9,$10,$11 }' >> \
       ${results_direc}/assoc_test/all.strata.assoc.pcs.txt
 
     plink2 --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels \
            --allow-no-sex \
-           --glm cols=chrom,pos,ref,alt,a0,test,nobs,beta,se,ci,p \
+           --glm no-firth cols=chrom,pos,ref,alt,test,nobs,beta,se,ci,p \
            --covar ${temp_direc}/5_assoc_test/3_assoc/${cons}/${stratum}/${cons}.${stratum}.4PC.txt \
            --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.4PC.beta
 
     cat ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.4PC.beta.PHENO1.glm.logistic | \
       awk -v cons=$cons -v strat=$stratum -v pc=4 \
-        'NR != 1 && $8=="ADD" { print cons,strat,pc,$3,$1,$2,$6,$7,$9,$10,$11,$12 }' >> \
+        'NR != 1 && $7=="ADD" { print cons,strat,pc,$3,$1,$2,$4,$5,$8,$9,$10,$11 }' >> \
       ${results_direc}/assoc_test/all.strata.assoc.pcs.txt
 
     plink2 --bfile ${temp_direc}/5_assoc_test/1_remove_relatives/5_no_rels/${cons}/${stratum}/${cons}.${stratum}.no.rels \
            --allow-no-sex \
-           --glm cols=chrom,pos,ref,alt,a0,test,nobs,beta,se,ci,p \
+           --glm no-firth cols=chrom,pos,ref,alt,test,nobs,beta,se,ci,p \
            --covar ${temp_direc}/5_assoc_test/3_assoc/${cons}/${stratum}/${cons}.${stratum}.5PC.txt \
            --out ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.5PC.beta
 
     cat ${temp_direc}/5_assoc_test/4_meta_analysis/${cons}/${cons}.${stratum}.logistic.5PC.beta.PHENO1.glm.logistic | \
       awk -v cons=$cons -v strat=$stratum -v pc=5 \
-        'NR != 1 && $8=="ADD" { print cons,strat,pc,$3,$1,$2,$6,$7,$9,$10,$11,$12 }' >> \
+        'NR != 1 && $7=="ADD" { print cons,strat,pc,$3,$1,$2,$4,$5,$8,$9,$10,$11 }' >> \
       ${results_direc}/assoc_test/all.strata.assoc.pcs.txt
   done
 done
