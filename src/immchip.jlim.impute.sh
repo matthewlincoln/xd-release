@@ -128,7 +128,7 @@ MIN_SNPS_INTERSECTION=1
 # The minimum P value to define an edge between traits:
 CLUSTER_MIN_P=0.05
 
-module load R/3.5.0-foss-2016b-avx2
+module load R/4.0.5-foss-2020b
 module load VCFtools
 module load tabix
 
@@ -256,7 +256,7 @@ for region_num in ${!immchip_chr[@]}; do
       [ "$assoc_num" -ne 0 ] && [ "$another_round" -eq 0 ] && break
 
       # Stop conditioning after three rounds:
-      [ "$assoc_num" -eq 4 ] && break
+      [ "$assoc_num" -eq 3 ] && break
 
       for stratum in ${strat_list[$cons]}; do
         # echo $cons $stratum $region_num $region_chr $region_start $region_end
