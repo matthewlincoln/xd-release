@@ -802,6 +802,117 @@ done # region_num
 
 
 ################################################################################
+############    Section 5b: Identify causal variants with GUESSFM    ###########
+################################################################################
+
+# Sequential stepwise conditioning (as above) may be susceptible to bias where
+# a non-causal variant is in partial LD to multiple (truly) causal variants. In
+# this scenario, the non-causal variant may show stronger association than
+# either causal variant. To test for this possibility, we use GUESSFM to
+# prioritize causal variants for each of the signals that are assessed by JLIM.
+
+
+# 1. Use PLINK to produce hard genotype calls
+# 2. Import into R (snpStats)
+# 3. Run GUESSFM to identify most likely causal configuration
+# 4. Identify conditionally independent associations for each causal set
+
+
+### Run meta-analysis on stepwise selection data:
+Rscript ${src_direc}/metafor.indep.R \
+  ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt.gz \
+  FE \
+  50 \
+  ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta
+
+
+mkdir -p ${temp_direc}/8_jlim_impute/2b_guessfm
+
+> ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.loci.txt
+cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt | \
+  awk '{ print $1,$2; print $1,$4 }' | sort -k1n,1 | uniq | \
+while read region_num cons; do
+  mkdir -p ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}
+
+  > ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.mergelist.txt
+  echo "FID IID STRATUM" > ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.sample.strat.txt
+  echo "SNP STRATUM N_MISS" > ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.lmiss.strat.txt
+  echo "FID IID STRATUM N_MISS" > ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.imiss.strat.txt
+  echo "FID IID PC1 PC2" > ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.pcs.txt
+  for stratum in ${strat_list[$cons]}; do
+    plink --bgen ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+          --sample ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+          --hard-call-threshold random \
+          --prune \
+          --allow-no-sex \
+          --missing \
+          --make-bed \
+          --out ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.${stratum}
+
+    echo "${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.${stratum}" >> \
+      ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.mergelist.txt
+
+    # Record stratum for each sample:
+    cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.${stratum}.fam | \
+      awk -v strat=$stratum '{ print $1,$2,strat }' >> \
+      ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.sample.strat.txt
+
+    # Get PCs for this stratum:
+    cat ${results_direc}/assoc_test/${cons}/${cons}.${stratum}.ld.pruned.pca.pcs.txt | \
+      awk 'NR!=1 { print $1,$2,$3,$4 }' >> \
+      ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.pcs.txt
+
+    # Record missingness for each SNP and subject in this stratum:
+    cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.${stratum}.lmiss | \
+      awk -v strat=$stratum 'NR!=1 { print $2,strat,$3 }' >> \
+      ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.lmiss.strat.txt
+    cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.${stratum}.imiss | \
+      awk -v strat=$stratum 'NR!=1 { print $1,$2,strat,$4 }' >> \
+      ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.imiss.strat.txt
+  done # stratum
+
+  # Merge all strata for this locus:
+  plink --merge-list ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.mergelist.txt \
+        --merge-equal-pos \
+        --allow-no-sex \
+        --make-bed \
+        --out ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}
+
+  # Save this region/disease to file:
+  echo "${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}" >> \
+    ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.loci.txt
+done # region_num
+
+# Run GUESSFM on all JLIM loci:
+mkdir -p ${temp_direc}/8_jlim_impute/2b_guessfm/logs
+
+printf '#!'"/bin/bash
+#SBATCH -J guessfm
+#SBATCH --mem=24G
+#SBATCH --array=1-$(cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.loci.txt | wc -l)
+#SBATCH -o ${temp_direc}/8_jlim_impute/2b_guessfm/logs/guessfm_%%a.out
+#SBATCH -e ${temp_direc}/8_jlim_impute/2b_guessfm/logs/guessfm_%%a.err
+
+module load R/4.0.5-foss-2020b
+
+# Get plink stem:
+plink_stem=\$(cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.loci.txt | \\
+  awk -v line=\$SLURM_ARRAY_TASK_ID 'NR==line { print \$1 }')
+
+Rscript ${src_direc}/guessfm.R \\
+  \$plink_stem \\
+  0.8 \\
+  2 \\
+  30000 \\
+  0.9 \\
+  \${plink_stem}.guessfm.txt
+" > \
+  ${temp_direc}/8_jlim_impute/2b_guessfm/logs/run.guessfm.sh
+
+sbatch ${temp_direc}/8_jlim_impute/2b_guessfm/logs/run.guessfm.sh
+
+
+################################################################################
 ##############    Section 6: Run JLIM on identified trait pairs    #############
 ################################################################################
 
