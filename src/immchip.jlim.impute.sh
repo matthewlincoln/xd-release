@@ -681,23 +681,21 @@ rm ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.merge*
 mkdir -p ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts \
          ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/outputs
 
-jobid=""
-joblist=""
-for i in {1..100}; do
-  printf '#!'"/bin/bash
-#SBATCH -J dups.ibd.${i}
-#SBATCH -o ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.out
-#SBATCH -e ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.err
+
+printf '#!'"/bin/bash
+#SBATCH -J dups.ibd
+#SBATCH --array=1-100
+#SBATCH -o ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.%%a.out
+#SBATCH -e ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.%%a.err
 
 plink --bfile ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.merged \\
       --genome full \\
       --min 0.185 \\
-      --parallel ${i} 100 \\
+      --parallel \${SLURM_ARRAY_TASK_ID} 100 \\
       --out ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/outputs/all.cons.merged.ibd" > \
-    ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.sh
+  ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.sh
 
-  sbatch ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.${i}.sh
-done
+sbatch ${temp_direc}/8_jlim_impute/3_identify_dups/2_ibd/scripts/all.cons.merged.ibd.sh
 
 # We must wait for IBD calculations to finish before continuing:
 exit
@@ -780,6 +778,7 @@ wc -l ${temp_direc}/8_jlim_impute/3_identify_dups/1_merge/ced.ibd.ms.ra.sle.t1d.
 # association testing:
 mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs
 
+> ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt
 for region_num in ${!immchip_chr[@]}; do
 
   # Skip region 75 (MHC):
@@ -795,6 +794,10 @@ for region_num in ${!immchip_chr[@]}; do
           $LEAD_R2_THRESHOLD \
           $MIN_SNPS_INTERSECTION \
           ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs
+
+  cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/region_${region_num}.jlim.trait.pairs.txt | \
+    awk 'NR!=1' >> \
+    ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt
 done # region_num
 
 
