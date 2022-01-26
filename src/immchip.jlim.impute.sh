@@ -916,7 +916,7 @@ sbatch ${temp_direc}/8_jlim_impute/2b_guessfm/logs/run.guessfm.sh
 mkdir -p ${temp_direc}/8_jlim_impute/4_jlim/logs
 
 # Prepare association and LD data for JLIM:
-sbatch --array=1-2 \
+sbatch --array=1-$(cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt | wc -l) \
   -o ${temp_direc}/8_jlim_impute/4_jlim/logs/immchip.jlim.impute.assoc.\%a.out \
   -e ${temp_direc}/8_jlim_impute/4_jlim/logs/immchip.jlim.impute.assoc.\%a.err \
   ${src_direc}/immchip.jlim.impute.assoc.sh \
@@ -925,7 +925,7 @@ sbatch --array=1-2 \
   $src_direc \
   $log_direc \
   $results_direc \
-  ${temp_direc}/8_jlim_impute/4_jlim/jlim.repeat.pairs.txt
+  ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt
 
 
 # Make sure that all config files use consistent primary and secondary traits:
