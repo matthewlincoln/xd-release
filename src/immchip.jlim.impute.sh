@@ -811,11 +811,8 @@ done # region_num
 # either causal variant. To test for this possibility, we use GUESSFM to
 # prioritize causal variants for each of the signals that are assessed by JLIM.
 
-
-# 1. Use PLINK to produce hard genotype calls
-# 2. Import into R (snpStats)
-# 3. Run GUESSFM to identify most likely causal configuration
-# 4. Identify conditionally independent associations for each causal set
+# Note that GUESSFM requires complete data, so we re-extract genotypes from the
+# imputed data without probability threshold.
 
 
 ### Run meta-analysis on stepwise selection data:
@@ -888,7 +885,7 @@ mkdir -p ${temp_direc}/8_jlim_impute/2b_guessfm/logs
 
 printf '#!'"/bin/bash
 #SBATCH -J guessfm
-#SBATCH --mem=24G
+#SBATCH --mem=48G
 #SBATCH --array=1-$(cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.loci.txt | wc -l)
 #SBATCH -o ${temp_direc}/8_jlim_impute/2b_guessfm/logs/guessfm_%%a.out
 #SBATCH -e ${temp_direc}/8_jlim_impute/2b_guessfm/logs/guessfm_%%a.err
