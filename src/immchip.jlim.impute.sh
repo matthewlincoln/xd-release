@@ -819,7 +819,7 @@ done # region_num
 Rscript ${src_direc}/metafor.indep.R \
   ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt.gz \
   FE \
-  50 \
+  $MAX_HET_I2 \
   ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta
 
 
@@ -871,6 +871,10 @@ while read region_num cons; do
   # Merge all strata for this locus:
   plink --merge-list ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.mergelist.txt \
         --merge-equal-pos \
+        --r2 \
+        --ld-window-r2 0 \
+        --ld-window 1000000 \
+        --ld-window-kb 1000000 \
         --allow-no-sex \
         --make-bed \
         --out ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}
@@ -907,6 +911,120 @@ Rscript ${src_direc}/guessfm.R \\
   ${temp_direc}/8_jlim_impute/2b_guessfm/logs/run.guessfm.sh
 
 sbatch ${temp_direc}/8_jlim_impute/2b_guessfm/logs/run.guessfm.sh
+
+
+# Compile GUESSFM results and LD data:
+mkdir -p ${results_direc}/guessfm
+echo "region_num cons chr_a bp_a snp_a chr_b bp_b snp_b r2" > \
+  ${results_direc}/guessfm/guessfm.ld.txt
+echo "region_num cons group_num snp chr position r2 marg_prob_incl cmpi" > \
+  ${results_direc}/guessfm/guessfm.results.txt
+cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt | \
+  awk '{ print $1,$2; print $1,$4 }' | sort -k1n,1 | uniq | \
+while read region_num cons; do
+  cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld | \
+    awk -v region=$region_num -v cons=$cons \
+    'NR!=1 { print region,cons,$1,$2,$3,$4,$5,$6,$7 }' >> \
+    ${results_direc}/guessfm/guessfm.ld.txt
+
+  if [ -f ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.guessfm.txt ]; then
+    cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.guessfm.txt | \
+      awk -v region=$region_num -v cons=$cons \
+      'NR!=1 { print region,cons,$1,$2,$3,$4,$5,$6,$7 }' >> \
+      ${results_direc}/guessfm/guessfm.results.txt
+  else
+    echo "$region_num $cons NA NA NA NA NA NA NA" >> \
+      ${results_direc}/guessfm/guessfm.results.txt
+  fi
+done # region_num
+
+gzip -f ${results_direc}/guessfm/guessfm.ld.txt
+gzip -f ${results_direc}/guessfm/guessfm.results.txt
+
+
+# Identify lead SNPs for each GUESSFM causal group:
+Rscript ${src_direc}/identify.guessfm.leads.R \
+  ${results_direc}/guessfm/guessfm.results.txt.gz \
+  ${temp_direc}/8_jlim_impute/1_cond_assoc \
+  ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.lead.snps.txt
+
+
+# Identify conditionally independent associations corresponding to GUESSFM lead SNPs:
+echo "region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p" > \
+  ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.assoc.txt
+cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.lead.snps.txt | \
+  tail -n +2 | \
+  cut -d ' ' -f 1-2 | sort -k 1n,1 -k 2,2 | uniq | \
+while read region_num cons; do
+
+  mkdir -p ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}
+
+  # Calculate the number of associations identified at this locus:
+  num_cond_assoc=$(cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.lead.snps.txt | \
+    awk -v region=$region_num -v disease=$cons '$1==region && $2==disease { print $3 }' | sort | uniq | wc -l)
+
+  if [ "$num_cond_assoc" -eq 1 ]; then
+    # Perform analysis without conditioning:
+    for stratum in ${strat_list[$cons]}; do
+      # snptest cannot tolerate "-" in file names, replace these with "_":
+      safestrat=$(echo $stratum | sed 's/-/_/g')
+
+      assoc_num=1
+      # Run association test with conditioning:
+      snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                           ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+                     -frequentist 1 \
+                     -method expected \
+                     -pheno pheno \
+                     -cov_names pc1 pc2 \
+                     -o ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest
+
+      cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest | \
+        awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$assoc_num \
+        '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42 }' >> \
+        ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.assoc.txt
+    done # stratum
+  else
+    # Condition on all but the present lead variant:
+    for assoc_num in $(seq 1 $num_cond_assoc); do
+      # For each stratum, condition on all lead SNPs identified apart from the current lead:
+      for stratum in ${strat_list[$cons]}; do
+        condition_snps=$(cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.lead.snps.txt | \
+                           awk -v region=$region_num -v disease=$cons\
+                               -v strat=$stratum -v assoc=$assoc_num \
+                             'BEGIN{ ORS = " " }
+                              $1==region && $2==disease && $3!=assoc && $4==strat { print $5 }')
+
+        # snptest cannot tolerate "-" in file names, replace these with "_":
+        safestrat=$(echo $stratum | sed 's/-/_/g')
+
+        # Run association test with conditioning:
+        snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                             ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+                       -frequentist 1 \
+                       -method expected \
+                       -pheno pheno \
+                       -cov_names pc1 pc2 \
+                       -condition_on $condition_snps \
+                       -o ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest
+
+        cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest | \
+          awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$assoc_num \
+          '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42 }' >> \
+          ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.assoc.txt
+      done # stratum
+    done # assoc_num
+  fi
+done # region_num cons
+
+gzip -f ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.assoc.txt
+
+# Run meta-analysis on GUESSFM associations:
+Rscript ${src_direc}/metafor.indep.R \
+        ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.assoc.txt.gz \
+        FE \
+        $MAX_HET_I2 \
+        ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.txt.gz
 
 
 ################################################################################

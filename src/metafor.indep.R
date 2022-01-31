@@ -18,11 +18,15 @@ i2_threshold <- as.numeric(args[3])
 output_file <- args[4]
 
 # Temporary values for debugging:
-assoc_file = "~/immchip/results/jlim_impute/jlim.cond.impute.indep.P_0.0001.R_0.90.txt.gz"
-meta_method = "FE"
-i2_threshold = 50
-output_stem = "~/immchip/results/jlim_impute/jlim.cond.impute.indep.P_0.0001.R_0.90.meta"
+# assoc_file = "~/immchip/results/jlim_impute/jlim.cond.impute.indep.P_0.0001.R_0.90.txt.gz"
+# meta_method = "FE"
+# i2_threshold = 50
+# output_stem = "~/immchip/results/jlim_impute/jlim.cond.impute.indep.P_0.0001.R_0.90.meta"
 
+message("assoc_file: ", assoc_file)
+message("meta_method: ", meta_method)
+message("i2_threshold ", i2_threshold)
+message("output_file: ", output_file)
 
 # Function to return the base complement of a set of alleles:
 complement <- function(alleles) {
