@@ -43,6 +43,8 @@ guessfm.snps <- guessfm.leads %>%
                                          full.names = TRUE))) %>%
   unnest(c(assoc_files)) %>%
   separate(assoc_files, into = c(NA, "stratum"), sep = "\\.", extra = "drop", remove = FALSE) %>%
+  # sle_g.EA stratum needs to be handled specifically:
+  mutate(stratum = ifelse(cons == "sle" & stratum == "sle_g", "sle_g.EA", stratum)) %>%
   mutate(assoc_data = map(assoc_files,
                           ~ read_table2(., comment = "#",
                                         col_types = cols_only(rsid = col_character(),
