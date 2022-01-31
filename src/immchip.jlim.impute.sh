@@ -1024,7 +1024,7 @@ Rscript ${src_direc}/metafor.indep.R \
         ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.assoc.txt.gz \
         FE \
         $MAX_HET_I2 \
-        ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.txt.gz
+        ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta
 
 
 ################################################################################

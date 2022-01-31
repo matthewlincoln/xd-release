@@ -15,7 +15,7 @@ args <- commandArgs(trailingOnly = T)
 assoc_file <- args[1]
 meta_method <- args[2]
 i2_threshold <- as.numeric(args[3])
-output_file <- args[4]
+output_stem <- args[4]
 
 # Temporary values for debugging:
 # assoc_file = "~/immchip/results/jlim_impute/jlim.cond.impute.indep.P_0.0001.R_0.90.txt.gz"
@@ -26,7 +26,7 @@ output_file <- args[4]
 message("assoc_file: ", assoc_file)
 message("meta_method: ", meta_method)
 message("i2_threshold ", i2_threshold)
-message("output_file: ", output_file)
+message("output_stem: ", output_stem)
 
 # Function to return the base complement of a set of alleles:
 complement <- function(alleles) {
