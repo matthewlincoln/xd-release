@@ -1026,6 +1026,9 @@ Rscript ${src_direc}/metafor.indep.R \
         $MAX_HET_I2 \
         ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta
 
+cp ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.fe.txt.gz \
+  ${results_direc}/guessfm
+
 
 ################################################################################
 ##############    Section 6: Run JLIM on identified trait pairs    #############
