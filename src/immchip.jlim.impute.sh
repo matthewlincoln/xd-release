@@ -1027,6 +1027,7 @@ Rscript ${src_direc}/metafor.indep.R \
         ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta
 
 cp ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.fe.txt.gz \
+   ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.fe.filter.txt.gz \
   ${results_direc}/guessfm
 
 
@@ -1638,6 +1639,8 @@ gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.results.P_${COND_P_THRESHO
 # will be numerically identical to the unconditional analysis. We therefore save
 # computation time by only running the unconditional analysis:
 
+# TODO: convert this section to job arrays, as in Section 6 above
+
 # The manually identified trait clusters:
 echo "region cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end status comment
 1 ced 0 ibd 0 2424122 2751364 run add_ra
@@ -1768,7 +1771,6 @@ echo "region cons1 indep_num1 cons2 indep_num2 jlim_start jlim_end status commen
 58 ced 1 ibd 1 122984633 123555178 run expand_cluster
 58 ced 1 t1d 1 122984633 123555178 run expand_cluster
 58 ibd 1 t1d 1 122984633 123555178 run expand_cluster
-61 ibd 1 ms 1 40289738 40441718 run new_cluster
 64 ibd 0 ms 0 96200770 96373750 run new_cluster
 64 ibd 1 ms 1 96200770 96373750 run new_cluster
 65 ra 0 sle 0 102583427 102681586 run new_cluster
