@@ -1031,6 +1031,31 @@ cp ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.fe.txt.gz \
   ${results_direc}/guessfm
 
 
+# Measure r2 between GUESSFM and snptest/metafor lead SNPs:
+RScript ${src_direc}/meta.guessfm.ld.R \
+        ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta.fe.filter.txt.gz \
+        ${results_direc}/guessfm/guessfm.meta.fe.filter.txt.gz \
+        ${temp_direc}/8_jlim_impute/2b_guessfm/region_
+
+# Collect results:
+echo "CHR_A BP_A SNP_A CHR_B BP_B SNP_B R2" > ${results_direc}/guessfm/guessfm.r2.leads.txt
+cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.lead.snps.txt | \
+  tail -n +2 | \
+  cut -d ' ' -f 1-2 | sort -k 1n,1 -k 2,2 | uniq | \
+while read region_num cons; do
+  if [ -f ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt ]; then
+    plink --bfile ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons} \
+        --r2 \
+        --ld-snp-list ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt \
+        --out ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps
+
+    cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.ld | \
+      awk 'NR !=1 { print $1,$2,$3,$4,$5,$6,$7 }' >> \
+      ${results_direc}/guessfm/guessfm.r2.leads.txt
+  fi
+done # region_num cons
+
+
 ################################################################################
 ##############    Section 6: Run JLIM on identified trait pairs    #############
 ################################################################################
