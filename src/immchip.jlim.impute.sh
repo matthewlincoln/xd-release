@@ -3371,3 +3371,12 @@ cat ${results_direc}/jlim_impute/jlim.impute.consolidated.statistics.txt | \
   done
 
 gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.ref.ld.snps.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.consolidated.txt
+
+
+### Run coloc on JLIM-positive trait clusters:
+mkdir -p ${results_direc}/coloc
+
+Rscript ${src_direc}/coloc.R \
+  ${results_direc}/jlim_impute/jlim.impute.clusters.dosage.txt \
+  ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta.fe.filter.txt.gz \
+  ${results_direc}/coloc/coloc.results.txt
