@@ -15,16 +15,16 @@ results_direc=$7
 base_direc=$8
 
 # Temporary values for debugging:
-base_direc=/ysm-gpfs/home/mrl54/immchip
+# base_direc=/ysm-gpfs/home/mrl54/immchip
 
 # meta does not deal with symlinks, so map $temp_direc to absolute path:
-temp_direc=/gpfs/ysm/scratch60/mrl54/immchip
-data_direc=/ysm-gpfs/home/mrl54/immchip/data
-src_direc=/ysm-gpfs/home/mrl54/immchip/src
-bin_direc=/ysm-gpfs/home/mrl54/bin
-log_direc=/ysm-gpfs/home/mrl54/immchip/logs
-project_direc=/ysm-gpfs/home/mrl54/project/immchip
-results_direc=/ysm-gpfs/home/mrl54/immchip/results
+# temp_direc=/gpfs/ysm/scratch60/mrl54/immchip
+# data_direc=/ysm-gpfs/home/mrl54/immchip/data
+# src_direc=/ysm-gpfs/home/mrl54/immchip/src
+# bin_direc=/ysm-gpfs/home/mrl54/bin
+# log_direc=/ysm-gpfs/home/mrl54/immchip/logs
+# project_direc=/ysm-gpfs/home/mrl54/project/immchip
+# results_direc=/ysm-gpfs/home/mrl54/immchip/results
 
 PATH=$PATH:${bin_direc}
 
@@ -116,7 +116,7 @@ while read chr start end name; do
   immchip_end["$region_num"]=$end
 done < ${data_direc}/reference/Immunochip-Region-Sorted.bed
 
-module load R/3.5.0-foss-2016b-avx2
+module load R/4.0.5-foss-2020b
 module load VCFtools
 module load tabix
 
@@ -295,7 +295,7 @@ gzip -f ${results_direc}/jlim_impute/jlim.cond.impute.clusters.assoc.P_${COND_P_
 
 
 # Perform meta analysis across colocalized clusters:
-script ${src_direc}/jlim.impute.finemap.metafor.R \
+Rscript ${src_direc}/jlim.impute.finemap.metafor.R \
         ${results_direc}/jlim_impute/jlim.cond.impute.clusters.assoc.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt.gz \
         $MAX_HET_I2 \
         $MIN_PROP_STRATA \
