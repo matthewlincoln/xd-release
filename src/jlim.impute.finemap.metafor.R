@@ -84,23 +84,13 @@ assoc_file <- as.character(args[1])
 max_i2 <- as.double(args[2])
 min_prop_strata <- as.double(args[3])
 mode <- as.character(args[4]) # "fe" or "all"
-output_all <- as.character(args[5])
-output_fe <- as.character(args[6])
-output_all_filter <- as.character(args[7])
-output_fe_filter <- as.character(args[8])
-output_fe_flip <- as.character(args[9])
-output_fe_merge <- as.character(args[10])
+output_stem <- as.character(args[5])
 
-print(paste("assoc_file", assoc_file))
-print(paste("max_i2", max_i2))
-print(paste("min_prop_strata", min_prop_strata))
-print(paste("mode", mode))
-print(paste("output_all", output_all))
-print(paste("output_fe", output_fe))
-print(paste("output_all_filter", output_all_filter))
-print(paste("output_fe_filter", output_fe_flip))
-print(paste("output_fe_flip", output_fe_flip))
-print(paste("output_fe_merge", output_fe_merge))
+message("assoc_file: ", assoc_file)
+message("max_i2: ", max_i2)
+message("min_prop_strata: ", min_prop_strata)
+message("mode: ", mode)
+message("output_stem: ", output_stem)
 
 
 # Read cross-disease meta analysis results for all clusters:
@@ -206,10 +196,10 @@ if (mode == "fe") {
   write_tsv(cluster.meta %>%
               filter(method == "FE" & mods == "no_moderator") %>%
               select(-method, -mods),
-            output_fe)
+            paste0(output_stem, ".fe.txt.gz"))
 } else {
   # Write raw meta analysis results for all models:
-  write_tsv(cluster.meta, output_all)
+  write_tsv(cluster.meta, paste0(output_stem, ".all.txt.gz"))
 }
 
 
@@ -243,30 +233,34 @@ cluster.meta.filter <- cluster.meta.pos %>%
   arrange(region_num, jlim_refgt, cluster_num, chromosome, position, method, mods, cons, indep_num)
 
 # Write heterogeneity-filtered meta analysis results for all models:
-if (mode != "fe") {
-  write_tsv(cluster.meta.filter, output_all_filter)
-}
+write_tsv(cluster.meta.filter, paste0(output_stem, ".all.filter.txt.gz"))
 
-# From this point on, only use FE, non-moderated results:
+# From this point on, only use non-moderated results:
 cluster.meta.filter <- cluster.meta.filter %>%
-  filter(method == "FE" & mods == "no_moderator") %>%
-  select(-method, -mods)
+  filter(mods == "no_moderator") %>%
+  select(-mods)
 
-# Write fixed-effects, non-moderated meta analysis results to file:
-write_tsv(cluster.meta.filter, output_fe_filter)
+# Write heterogeneity-filtered, non-moderated meta analysis results to file:
+cluster.meta.filter %>%
+  group_by(method) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(file = paste0(output_stem, ".", tolower(method), ".filter.txt.gz")) %>%
+  select(-method) %>%
+  pwalk(~ write_tsv(.x, file = .y))
 
 
 # Identify clusters with at least one pair of traits with opposing effects:
 inverted.clusters <- cluster.meta.filter %>%
   # Identify all trait clusters:
   filter(cons != "cluster") %>%
-  select(region_num, jlim_refgt, cluster_num, cons, indep_num) %>%
+  select(method, region_num, jlim_refgt, cluster_num, cons, indep_num) %>%
   unique() %>%
-  arrange(region_num, jlim_refgt, cluster_num, cons, indep_num) %>%
+  arrange(method, region_num, jlim_refgt, cluster_num, cons, indep_num) %>%
   # Enumerate all trait pairs at each cluster:
   unite(trait1, cons, indep_num) %>%
   mutate(trait2 = trait1) %>%
-  group_by(region_num, jlim_refgt, cluster_num) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num) %>%
   complete(trait1, trait2) %>%
   ungroup() %>%
   filter(trait1 < trait2) %>%
@@ -274,33 +268,33 @@ inverted.clusters <- cluster.meta.filter %>%
   separate(trait2, into = c("cons2", "indep_num2"), sep = "_", convert = TRUE) %>%
   # Obtain Z scores for each trait:
   left_join(cluster.meta.filter %>%
-              select(region_num, jlim_refgt, cluster_num, cons, indep_num, chromosome, position, z1 = z),
-            by = c("region_num", "jlim_refgt",  "cluster_num", "cons1" = "cons", "indep_num1" = "indep_num")) %>%
+              select(method, region_num, jlim_refgt, cluster_num, cons, indep_num, chromosome, position, z1 = z),
+            by = c("method", "region_num", "jlim_refgt",  "cluster_num", "cons1" = "cons", "indep_num1" = "indep_num")) %>%
   inner_join(cluster.meta.filter %>%
-               select(region_num, jlim_refgt, cluster_num, cons, indep_num, chromosome, position, z2 = z),
-             by = c("region_num", "jlim_refgt", "cluster_num", "cons2" = "cons", "indep_num2" = "indep_num", "chromosome", "position")) %>%
+               select(method, region_num, jlim_refgt, cluster_num, cons, indep_num, chromosome, position, z2 = z),
+             by = c("method", "region_num", "jlim_refgt", "cluster_num", "cons2" = "cons", "indep_num2" = "indep_num", "chromosome", "position")) %>%
   unite(trait1, cons1, indep_num1) %>%
   unite(trait2, cons2, indep_num2) %>%
   # Perform regressions for each pair:
-  group_by(region_num, jlim_refgt, cluster_num, trait1, trait2) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num, trait1, trait2) %>%
   do(tidy(lm(z2 ~ z1, data = .))) %>%
   ungroup() %>%
   select(-std.error, -statistic) %>%
   pivot_wider(values_from = c(estimate, p.value),
               names_from = term) %>%
   # Identify clusters that have at least one (significant) inverse relationship:
-  group_by(region_num, jlim_refgt, cluster_num) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num) %>%
   mutate(num_inverse = sum(estimate_z1 < 0 & p.value_z1 < 0.05)) %>%
   ungroup() %>%
   filter(num_inverse > 0)
 
 traits.to.flip <- inverted.clusters %>%
-  # filter(region_num == 31 & jlim_refgt == "ped") %>%
   # Build graphs with edges given by opposing effect relationships:
   filter(p.value_z1 < 0.05 & estimate_z1 < 0) %>%
-  select(region_num, jlim_refgt, cluster_num, trait1, trait2) %>%
-  group_by(region_num, jlim_refgt, cluster_num) %>%
+  select(method, region_num, jlim_refgt, cluster_num, trait1, trait2) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num) %>%
   nest() %>%
+  ungroup() %>%
   mutate(inverted_graph = map(data, ~ decompose(graph_from_data_frame(.x, directed = FALSE),
                                                 min.vertices = 2))) %>%
   unnest(inverted_graph) %>%
@@ -311,7 +305,7 @@ traits.to.flip <- inverted.clusters %>%
   unnest(cols = c("node", "order")) %>%
   select(-data, -inverted_graph) %>%
   # Select the node to invert:
-  group_by(region_num, jlim_refgt, cluster_num) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num) %>%
   arrange(desc(order), name) %>%
   slice(1) %>%
   ungroup() %>%
@@ -322,7 +316,7 @@ traits.to.flip <- inverted.clusters %>%
 ### on networks of inverted and non-inverted effects. Use caution for more complex situations.
 
 
-# Flip inverted traits and re-run (fixed-effects) meta analysis:
+# Flip inverted traits and re-run (non-moderated) meta analysis:
 cluster.meta.flip <- traits.to.flip %>%
   # Remove conditional number from flip_trait:
   separate(flip_trait, into = "flip_trait", sep = "_", extra = "drop") %>%
@@ -335,7 +329,7 @@ cluster.meta.flip <- traits.to.flip %>%
            sep = "\\.", extra = "merge", remove = FALSE) %>%
   mutate(beta = ifelse(disease == flip_trait, -beta, beta)) %>%
   # Run meta analysis:
-  group_by(region_num, jlim_refgt, cluster_num, cluster_size, cons, indep_num, chromosome, position, refA,
+  group_by(method, region_num, jlim_refgt, cluster_num, cluster_size, cons, indep_num, chromosome, position, refA,
            refB) %>%
   nest() %>%
   mutate(meta = map(data, ~ tidy.rma.mrl(tryCatch(rma.uni(yi = beta,
@@ -345,47 +339,56 @@ cluster.meta.flip <- traits.to.flip %>%
                                                   error = function(c) { NULL })))) %>%
   unnest(meta) %>%
   ungroup() %>%
-  select(region_num, jlim_refgt, cluster_num, cluster_size, cons, indep_num, chromosome, position, refA, refB,
+  select(method, region_num, jlim_refgt, cluster_num, cluster_size, cons, indep_num, chromosome, position, refA, refB,
          beta = BETA, se = SE, z = Z, p = P, k = K, qe = QE, qep = QEP, qm = QM, qmp = QMP,
          i2 = I2) %>%
-  arrange(region_num, jlim_refgt, cluster_num, chromosome, position, cons, indep_num)
+  arrange(method, region_num, jlim_refgt, cluster_num, chromosome, position, cons, indep_num)
 
 
 # Use heterogeneity-filtered positions:
 cluster.meta.flip <- cluster.meta.flip %>%
-  inner_join(cluster.meta.pos %>%
-               filter(method == "FE" & mods == "no_moderator") %>%
-               select(-method, -mods) %>%
-               unique(),
-             by = c("region_num", "jlim_refgt", "cluster_num", "cluster_size", "chromosome", "position")) %>%
-  select(region_num, jlim_refgt, cluster_num, cons, indep_num, chromosome, position, refA, refB,
+  inner_join(cluster.meta.pos,
+             by = c("method", "region_num", "jlim_refgt", "cluster_num", "cluster_size", "chromosome", "position")) %>%
+  select(method, region_num, jlim_refgt, cluster_num, cons, indep_num, chromosome, position, refA, refB,
          beta, se, z, p, k, qe, qep, qm, qmp, i2) %>%
-  arrange(region_num, jlim_refgt, cluster_num, chromosome, position, cons, indep_num)
+  arrange(method, region_num, jlim_refgt, cluster_num, chromosome, position, cons, indep_num)
 
 # Write flipped meta analysis results to file:
-write_tsv(cluster.meta.flip, output_fe_flip)
+cluster.meta.flip %>%
+  group_by(method) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(file = paste0(output_stem, ".", tolower(method), ".flip.txt.gz")) %>%
+  select(-method) %>%
+  pwalk(~ write_tsv(.x, file = .y))
 
 
 # Replace inverted clusters with flipped results:
 cluster.meta.merge <- bind_rows(
   cluster.meta.filter %>%
     anti_join(cluster.meta.flip %>%
-                select("region_num", "jlim_refgt", "cluster_num", "cons", "indep_num") %>%
+                select("method", "region_num", "jlim_refgt", "cluster_num", "cons", "indep_num") %>%
                 unique(),
-              by = c("region_num", "jlim_refgt", "cluster_num", "cons", "indep_num")),
+              by = c("method", "region_num", "jlim_refgt", "cluster_num", "cons", "indep_num")),
   cluster.meta.flip
 ) %>%
   # Include only SNPs with valid results in each trait of each cluster:
   filter(!(is.na(beta) & is.na(se) & is.na(z) & is.na(p))) %>%
-  group_by(region_num, jlim_refgt, cluster_num) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num) %>%
   mutate(num_traits = n_distinct(cons, indep_num)) %>%
   ungroup() %>%
-  group_by(region_num, jlim_refgt, cluster_num, chromosome, position) %>%
+  group_by(method, region_num, jlim_refgt, cluster_num, chromosome, position) %>%
   mutate(num_snps = n_distinct(cons, indep_num)) %>%
   ungroup() %>%
   filter(num_traits == num_snps) %>%
   select(-num_traits, -num_snps) %>%
-  arrange(region_num, jlim_refgt, cluster_num, chromosome, position, cons, indep_num)
+  arrange(method, region_num, jlim_refgt, cluster_num, chromosome, position, cons, indep_num)
 
 # Write merged meta analysis results to file:
-write_tsv(cluster.meta.merge, output_fe_merge)
+cluster.meta.merge %>%
+  group_by(method) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(file = paste0(output_stem, ".", tolower(method), ".merge.txt.gz")) %>%
+  select(-method) %>%
+  pwalk(~ write_tsv(.x, file = .y))

@@ -299,13 +299,8 @@ Rscript ${src_direc}/jlim.impute.finemap.metafor.R \
         ${results_direc}/jlim_impute/jlim.cond.impute.clusters.assoc.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.txt.gz \
         $MAX_HET_I2 \
         $MIN_PROP_STRATA \
-        fe \
-        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.all.txt.gz \
-        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.fe.txt.gz \
-        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.all.filter.txt.gz \
-        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.fe.filter.txt.gz \
-        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.fe.flip.txt.gz \
-        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.fe.merge.txt.gz
+        all \
+        ${results_direc}/jlim_impute/jlim.cond.impute.clusters.meta.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}
 ### Note that with mode set to "fe", we only run the fixed effects models (without moderators)
 
 
