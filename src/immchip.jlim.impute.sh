@@ -271,7 +271,7 @@ for region_num in ${!immchip_chr[@]}; do
           qctool_v2.1-dev -g ${project_direc}/imputed_dataset/${cons}/${stratum}/${cons}.${stratum}.chr_${region_chr}.imputed.bgen \
                           -s ${project_direc}/imputed_dataset/${cons}/${stratum}/${cons}.${stratum}.chr_${region_chr}.imputed.sample \
                           -excl-samples ${log_direc}/assoc_test/${cons}/${cons}.relatives.to.remove.txt \
-                          -incl-rsids <(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/region_${region_num}.${cons}.${stratum}.jlim.snps.txt | cut -d ' ' -f 1)\
+                          -incl-rsids <(cat ${temp_direc}/8_jlim_impute/1_cond_assoc/snp_lists/region_${region_num}.${cons}.${stratum}.jlim.snps.txt | cut -d ' ' -f 1) \
                           -ofiletype bgen_v1.1 \
                           -bgen-permitted-input-rounding-error 0.001 \
                           -og ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
@@ -1045,15 +1045,167 @@ cat ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.lead.snps.txt | \
 while read region_num cons; do
   if [ -f ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt ]; then
     plink --bfile ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons} \
-        --r2 \
-        --ld-snp-list ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt \
-        --out ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps
+          --r2 \
+          --ld-snp-list ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt \
+          --out ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps
 
     cat ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.ld | \
       awk 'NR !=1 { print $1,$2,$3,$4,$5,$6,$7 }' >> \
       ${results_direc}/guessfm/guessfm.r2.leads.txt
   fi
 done # region_num cons
+
+
+################################################################################
+###############    Section 5c: Association analysis with GCTA    ###############
+################################################################################
+
+# In this section, we use GCTA-COJO to identify conditionally independent
+# associations. This is another approach to the multiple tagging problem
+# addressed in Section 5b.
+
+mkdir -p ${results_direc}/gcta
+
+for cons in $strat_cons_list; do
+  mkdir -p ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}
+  > ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}/${cons}.mergelist.txt
+  for stratum in ${strat_list[$cons]}; do
+    for region_num in ${!immchip_chr[@]}; do
+      # Skip MHC:
+      [ "$region_num" -eq 75 ] && continue
+
+      plink --bgen ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+            --sample ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+            --prune \
+            --allow-no-sex \
+            --make-bed \
+            --out ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}/${cons}.${stratum}.region_${region_num}
+
+      echo ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}/${cons}.${stratum}.region_${region_num} >> \
+        ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}/${cons}.mergelist.txt
+    done # region_num
+  done # stratum
+
+  plink --merge-list ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}/${cons}.mergelist.txt \
+        --merge-equal-pos \
+        --allow-no-sex \
+        --make-bed \
+        --freq \
+        --out ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}
+
+  # Make COJO input file:
+  Rscript ${src_direc}/gcta.input.R \
+    ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta.fe.filter.txt.gz \
+    $cons \
+    ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}.bim \
+    ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}.fam \
+    ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}.frq \
+    ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}.ma
+done # cons
+
+# Run GCTA-COJO on our shared effects:
+cat ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt | \
+  awk '{ print $1,$2; print $1,$4 }' | sort -k1n,1 | uniq | \
+while read region_num cons; do
+  mkdir -p ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}
+  gcta --bfile ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons} \
+       --extract <(cat ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}.bim | \
+                     awk -v chr=${immchip_chr[$region_num]} -v start=${immchip_start[$region_num]} \
+                         -v end=${immchip_end[$region_num]} \
+                     '$1==chr && $4>=start && $4<=end { print $2 }') \
+       --cojo-file ${temp_direc}/8_jlim_impute/2c_gcta/datasets/${cons}.ma \
+       --cojo-slct \
+       --out ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}.region_${region_num}
+done # region_num cons
+
+
+# Identify conditioning SNPs for each stratum:
+Rscript ${src_direc}/identify.gcta.leads.R \
+  ${temp_direc}/8_jlim_impute/4_jlim/0_jlim_pairs/jlim.trait.pairs.txt \
+  ${temp_direc}/8_jlim_impute/2c_gcta \
+  ${temp_direc}/8_jlim_impute/2c_gcta/gcta.lead.snps.txt
+
+
+# Identify conditionally independent associations for each locus:
+echo "region_num cons stratum indep_num rsid chromosome position alleleA alleleB beta se p" > \
+  ${temp_direc}/8_jlim_impute/2c_gcta/gcta.assoc.txt
+cat ${temp_direc}/8_jlim_impute/2c_gcta/gcta.lead.snps.txt | \
+  tail -n +2 | \
+  cut -f 1-2 | sort -k 1n,1 -k 2,2 | uniq | \
+while read region_num cons; do
+
+  mkdir -p ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}
+
+  # Calculate the number of associations identified at this locus:
+  num_cond_assoc=$(cat ${temp_direc}/8_jlim_impute/2c_gcta/gcta.lead.snps.txt | \
+    awk -v region=$region_num -v disease=$cons '$1==region && $2==disease { print $3 }' | sort | uniq | wc -l)
+
+  if [ "$num_cond_assoc" -eq 1 ]; then
+    # Perform analysis without conditioning:
+    for stratum in ${strat_list[$cons]}; do
+      # snptest cannot tolerate "-" in file names, replace these with "_":
+      safestrat=$(echo $stratum | sed 's/-/_/g')
+
+      assoc_num=1
+      # Run association test with conditioning:
+      snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                           ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+                     -frequentist 1 \
+                     -method expected \
+                     -pheno pheno \
+                     -cov_names pc1 pc2 \
+                     -o ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest
+
+      cat ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest | \
+        awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$assoc_num \
+        '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42 }' >> \
+        ${temp_direc}/8_jlim_impute/2c_gcta/gcta.assoc.txt
+    done # stratum
+  else
+    # Condition on all but the present lead variant:
+    for assoc_num in $(seq 1 $num_cond_assoc); do
+      # For each stratum, condition on all lead SNPs identified apart from the current lead:
+      for stratum in ${strat_list[$cons]}; do
+        condition_snps=$(cat ${temp_direc}/8_jlim_impute/2c_gcta/gcta.lead.snps.txt | \
+                           awk -v region=$region_num -v disease=$cons\
+                               -v strat=$stratum -v assoc=$assoc_num \
+                             'BEGIN{ ORS = " " }
+                              $1==region && $2==disease && $3!=assoc && $4==strat { print $5 }')
+
+        # snptest cannot tolerate "-" in file names, replace these with "_":
+        safestrat=$(echo $stratum | sed 's/-/_/g')
+
+        # Run association test with conditioning:
+        snptest_v2.5.2 -data ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.bgen \
+                             ${temp_direc}/8_jlim_impute/1_cond_assoc/region_${region_num}/${cons}/${cons}.${stratum}.region_${region_num}.imputed.2pc.sample \
+                       -frequentist 1 \
+                       -method expected \
+                       -pheno pheno \
+                       -cov_names pc1 pc2 \
+                       -condition_on $condition_snps \
+                       -o ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest
+
+        cat ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/${cons}.${safestrat}.region_${region_num}.guessfm_${assoc_num}.snptest | \
+          awk -v region=$region_num -v cons=$cons -v strat=$stratum -v assoc=$assoc_num \
+          '!/^#/ && $2 != "rsid" { print region,cons,strat,assoc,$2,$3,$4,$5,$6,$44,$45,$42 }' >> \
+          ${temp_direc}/8_jlim_impute/2c_gcta/gcta.assoc.txt
+      done # stratum
+    done # assoc_num
+  fi
+done # region_num cons
+
+gzip -f ${temp_direc}/8_jlim_impute/2c_gcta/gcta.assoc.txt
+
+# Run meta-analysis on GCTA associations:
+Rscript ${src_direc}/metafor.indep.R \
+        ${temp_direc}/8_jlim_impute/2c_gcta/gcta.assoc.txt.gz \
+        FE \
+        $MAX_HET_I2 \
+        ${temp_direc}/8_jlim_impute/2c_gcta/gcta.meta
+
+cp ${temp_direc}/8_jlim_impute/2c_gcta/gcta.meta.fe.txt.gz \
+   ${temp_direc}/8_jlim_impute/2c_gcta/gcta.meta.fe.filter.txt.gz \
+  ${results_direc}/gcta
 
 
 ################################################################################
