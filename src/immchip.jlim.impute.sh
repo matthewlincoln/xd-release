@@ -1032,9 +1032,10 @@ cp ${temp_direc}/8_jlim_impute/2b_guessfm/guessfm.meta.fe.txt.gz \
 
 
 # Measure r2 between GUESSFM and snptest/metafor lead SNPs:
-RScript ${src_direc}/meta.guessfm.ld.R \
+Rscript ${src_direc}/meta.guessfm.ld.R \
         ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta.fe.filter.txt.gz \
         ${results_direc}/guessfm/guessfm.meta.fe.filter.txt.gz \
+        ${temp_direc}/8_jlim_impute/2b_guessfm/region_ \
         ${temp_direc}/8_jlim_impute/2b_guessfm/region_
 
 # Collect results:
@@ -1206,6 +1207,35 @@ Rscript ${src_direc}/metafor.indep.R \
 cp ${temp_direc}/8_jlim_impute/2c_gcta/gcta.meta.fe.txt.gz \
    ${temp_direc}/8_jlim_impute/2c_gcta/gcta.meta.fe.filter.txt.gz \
   ${results_direc}/gcta
+
+
+# Measure r2 between GCTA and snptest/metafor lead SNPs:
+Rscript ${src_direc}/meta.guessfm.ld.R \
+        ${results_direc}/jlim_impute/jlim.cond.impute.indep.P_${COND_P_THRESHOLD}.R_${COND_R2_THRESHOLD}.meta.fe.filter.txt.gz \
+        ${results_direc}/guessfm/guessfm.meta.fe.filter.txt.gz \
+        ${temp_direc}/8_jlim_impute/2b_guessfm/region_ \
+        ${temp_direc}/8_jlim_impute/2c_gcta/region_
+### Note that we can re-use code from the GUESSFM analysis
+
+# Collect results:
+echo "CHR_A BP_A SNP_A CHR_B BP_B SNP_B R2" > ${results_direc}/gcta/gcta.r2.leads.txt
+cat ${temp_direc}/8_jlim_impute/2c_gcta/gcta.lead.snps.txt | \
+  tail -n +2 | \
+  cut -f 1-2 | sort -k 1n,1 -k 2,2 | uniq | \
+while read region_num cons; do
+  if [ -f ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt ]; then
+    plink --bfile ${temp_direc}/8_jlim_impute/2b_guessfm/region_${region_num}/${cons}/region_${region_num}.${cons} \
+          --r2 \
+          --ld-snp-list ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.txt \
+          --out ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps
+
+    cat ${temp_direc}/8_jlim_impute/2c_gcta/region_${region_num}/${cons}/region_${region_num}.${cons}.ld.snps.ld | \
+      awk 'NR !=1 { print $1,$2,$3,$4,$5,$6,$7 }' >> \
+      ${results_direc}/gcta/gcta.r2.leads.txt
+  fi
+done # region_num cons
+
+
 
 
 ################################################################################

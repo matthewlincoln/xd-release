@@ -13,15 +13,13 @@ args <- commandArgs(trailingOnly = TRUE)
 meta_assoc <- args[1]
 guessfm_assoc <- args[2]
 plink_stem <- args[3]
+output_stem <- args[4]
 
-# Temporary values for debugging:
-# meta_assoc = "/home/mrl54/immchip/results/jlim_impute/jlim.cond.impute.indep.P_0.0001.R_0.90.meta.fe.filter.txt.gz"
-# guessfm_assoc = "/home/mrl54/immchip/results/guessfm/guessfm.meta.fe.filter.txt.gz"
-# plink_stem = "/home/mrl54/scratch60/immchip/8_jlim_impute/2b_guessfm/region_"
 
 message("meta_assoc: ", meta_assoc)
 message("guessfm_assoc: ", guessfm_assoc)
 message("plink_stem: ", plink_stem)
+message("output_stem: ", output_stem)
 
 # Read association data for loci that converged with GUESSFM (not all did):
 meta.guessfm.assoc <- tibble(method = c("meta", "guessfm"),
@@ -65,7 +63,7 @@ lead.positions %>%
                                              "position" = "bp")))) %>%
   select(-data, -bim_file) %>%
   unnest(snp_data) %>%
-  mutate(output_file = paste0(plink_stem, region_num, "/", cons,
+  mutate(output_file = paste0(output_stem, region_num, "/", cons,
                               "/region_", region_num, ".", cons, ".ld.snps.txt")) %>%
   select(output_file, snp) %>%
   group_by(output_file) %>%
