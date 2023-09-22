@@ -2,12 +2,12 @@
 
 
 ## Contact
-[Matthew R Lincoln](mailto:matthew.lincoln@yale.edu)
-[Chris Cotsapas](mailto:cotsapas@broadinstitute.org)
+[Matthew R Lincoln](mailto:matthew.lincoln@utoronto.ca)
+[Chris Cotsapas](mailto:cotsapas@gmail.com)
 
 
 ## Introduction
-This repository contains code used for quality control, association, joint likelihood mapping and fine-mapping in [Joint analysis reveals shared autoimmune disease associations and identifies common mechanisms](https://localhost).
+This repository contains code used for quality control, association, joint likelihood mapping and fine-mapping in [Genetic mapping across autoimmune diseases reveals shared associations and mechanisms](https://doi.org/10.1101/2021.05.13.21257044).
 
 
 ## Disclaimer
